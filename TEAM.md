@@ -84,32 +84,38 @@ looking at.
 
 ## Running the app
 
-Each person runs their own server on their own laptop and scans with their own
-phone. You cannot share a QR code — it points at one specific laptop.
+**You do not need Expo, an Expo account, or a phone to work on this project.**
+Expo Go is only a way to preview the app on a phone. GitHub is what connects us.
+You can write code, commit and push with none of it installed.
 
-```bash
-npm start
-```
-
-Scan the QR with Expo Go. Leave the server running; when you save a file the app
-reloads on your phone in a second or two.
-
-### If the QR doesn't connect
-
-Campus and guest Wi-Fi usually block phones and laptops from talking to each
-other directly. Use tunnel mode, which routes around the network:
-
-```bash
-npx expo start --tunnel
-```
-
-Slower to start, works almost anywhere. First run installs a helper package.
-
-### No phone?
+### The easy way — browser, no account, no phone
 
 ```bash
 npm run web
 ```
 
-Fine for laying out a screen. The security features behave differently in a
-browser, so don't judge those from it.
+Opens in your browser. No login, no QR code, nothing to install. Use this to
+build and lay out your screens. This is the right default for everyone.
+
+The security features (backgrounding, the app-switcher preview, biometrics)
+behave differently in a browser, so Lane A should check those on a real phone
+before we demo. Everyone else can stay in the browser the whole time.
+
+### On a phone, when you want it
+
+One-time: make a free account at expo.dev, install **Expo Go** on your phone,
+then run `npx expo login` on your laptop.
+
+```bash
+npm start
+```
+
+Scan the QR with Expo Go. Each person runs their own server and scans with their
+own phone — a QR code points at one specific laptop and can't be shared.
+
+If it won't connect, campus Wi-Fi is probably blocking phone-to-laptop traffic.
+Route around it:
+
+```bash
+npx expo start --tunnel
+```
