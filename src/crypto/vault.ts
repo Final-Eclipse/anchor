@@ -35,12 +35,17 @@ const WRAPPED_KEY_ITEM = 'anchor.wrapped_key';
 const SALT_BYTES = 16;
 
 /**
- * PBKDF2 here is pure JS and runs far slower in Hermes than on a laptop. This
- * count is a starting guess — unlock happens on every return to the foreground,
- * so measure it on a real phone. If it costs more than about a second, lower it
- * and write down what you measured and why.
+ * PBKDF2 here is pure JS and runs far slower in Hermes than on a laptop.
+ * 100,000 measured over a second on an iPhone, which is too slow for an app
+ * someone may open under pressure, so it came down to 30,000.
+ *
+ * That trade is smaller than it looks. This work exists to make guessing the PIN
+ * expensive, but a 4-digit PIN has only 10,000 possibilities — the PIN length is
+ * the real limit, not the iteration count. Moving to a 6-digit PIN buys 100x more
+ * than any iteration count we could afford here, and costs nothing. Do that when
+ * you build the real unlock screen.
  */
-const PBKDF2_ITERATIONS = 100_000;
+const PBKDF2_ITERATIONS = 30_000;
 
 /**
  * iOS syncs Keychain items to iCloud Keychain unless told otherwise, which would
