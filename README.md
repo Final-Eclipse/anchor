@@ -1,8 +1,7 @@
 # Anchor
 
-> Repo is named `buried`; the app is called Anchor. Pick one before judging —
-> whichever you choose, the on-device name is a third thing again, and stays
-> innocuous.
+> The name on the phone is a separate decision and stays innocuous — a notes or
+> budget app. "Anchor" is what we call it in the pitch, not on the home screen.
 
 A discretion-first mobile app for women facing financial control in a relationship.
 It assesses her situation privately, routes her to a plan built for that situation,
@@ -23,8 +22,8 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 Then, in a new terminal:
 
 ```bash
-git clone https://github.com/Final-Eclipse/buried.git
-cd buried
+git clone https://github.com/Final-Eclipse/anchor.git
+cd anchor
 nvm use          # reads .nvmrc so we're all on the same Node
 npm install
 npm start
