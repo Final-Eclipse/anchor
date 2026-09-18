@@ -42,6 +42,8 @@ npm run check    # typecheck + content and routing checks
 
 ## Who owns what
 
+**→ See [TEAM.md](TEAM.md) for your lane and your first task.**
+
 Three lanes, so four people can work at once without colliding.
 
 | Lane | Owns | Files |
