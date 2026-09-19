@@ -11,6 +11,11 @@
 import { QUESTIONS } from '../src/data/questions';
 import { PATHS } from '../src/data/paths';
 import { RESOURCES, unverified } from '../src/data/resources';
+import {
+  danglingResourceIds,
+  matchResources,
+  unreachableResourceIds,
+} from '../src/data/matching';
 import { scoreAssessment } from '../src/data/scoring';
 import type { PathId } from '../src/data/types';
 
@@ -100,6 +105,60 @@ for (const id of ['safety-first', 'no-money-of-her-own', 'partly-independent'] a
       if (matches.length === 0) fail(`${id}/${step.id} filters to an empty directory`);
     }
   }
+}
+
+// ── the matched directory at the end of a plan ───────────────────────────
+console.log('\nMatching');
+
+const dangling = danglingResourceIds();
+dangling.length === 0
+  ? pass('every match rule points at a resource that exists')
+  : fail(`match rules name missing resources: ${dangling.join(', ')}`);
+
+// She can skip everything. That must still produce something to show, or the
+// end of her plan is a heading over an empty space.
+const emptyIntake = matchResources(scoreAssessment({}, QUESTIONS));
+emptyIntake.length > 0
+  ? pass(`a fully skipped intake still matches ${emptyIntake.length} group(s)`)
+  : fail('a fully skipped intake matches nothing');
+
+// Walk every answer to each question, on its own, and confirm nothing throws
+// and every group that appears has something in it.
+for (const question of QUESTIONS) {
+  for (const option of question.options) {
+    const result = scoreAssessment({ [question.id]: option.value }, QUESTIONS);
+    const groups = matchResources(result);
+    const empty = groups.filter((g) => g.resources.length === 0);
+    if (empty.length) {
+      fail(`${question.id}=${option.value} produced empty group(s): ${empty.map((g) => g.id).join(', ')}`);
+    }
+  }
+}
+pass(`every single answer produces well-formed groups (${QUESTIONS.reduce((n, q) => n + q.options.length, 0)} checked)`);
+
+// No resource should appear twice in one plan — she shouldn't scroll past the
+// same hotline under three different headings.
+const everything = matchResources(
+  scoreAssessment(
+    {
+      'safety-now': 'yes',
+      'own-account': 'no',
+      'own-income': 'none',
+      'spending-permission': 'always',
+      'debt-visibility': 'coerced',
+      children: 'yes',
+    },
+    QUESTIONS
+  )
+);
+const shownIds = everything.flatMap((g) => g.resources.map((r) => r.id));
+shownIds.length === new Set(shownIds).size
+  ? pass(`highest-need answers show ${shownIds.length} organisations, none repeated`)
+  : fail('the same resource appears in more than one group');
+
+const unreachable = unreachableResourceIds();
+if (unreachable.length) {
+  console.log(`  note  only findable by browsing: ${unreachable.join(', ')}`);
 }
 
 // ── content readiness ────────────────────────────────────────────────────
