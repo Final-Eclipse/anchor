@@ -60,32 +60,31 @@ export const MATCH_RULES: MatchRule[] = [
     id: 'somewhere-tonight',
     reason: 'Places with beds tonight. Each one covers a different county.',
     when: (r) => answered(r, 'safety-now', 'yes', 'unsure') || r.pathId === 'safety-first',
-    resources: ['wrcdv', 'livesafe-cobb', 'securus-house', 'promise-place'],
+    resources: ['wrcdv', 'livesafe-cobb'],
   },
   {
     id: 'pets',
     reason: 'If a pet is part of what makes leaving hard.',
     when: (r) => answered(r, 'safety-now', 'yes', 'unsure') || r.pathId === 'safety-first',
-    resources: ['ahimsa-house'],
+    resources: [],
   },
   {
     id: 'coerced-debt',
     reason: 'You said there is debt you did not agree to.',
     when: (r) => answered(r, 'debt-visibility', 'coerced'),
-    resources: ['cfpb', 'atlanta-legal-aid', 'ga-legal-services', 'georgia-legal-aid-web'],
+    resources: ['cfpb', 'atlanta-legal-aid', 'ga-legal-services'],
   },
   {
     id: 'debt-unknown',
     reason: 'You said you do not know what is owed in your name.',
     when: (r) => answered(r, 'debt-visibility', 'no'),
-    resources: ['cfpb', 'georgia-legal-aid-web'],
+    resources: ['cfpb'],
   },
   {
     id: 'no-money-in',
     reason: 'You said the money coming in is not yours to control.',
     when: (r) => answered(r, 'own-income', 'none', 'controlled'),
     resources: [
-      'ga-gateway',
       'united-way-211',
       'ga-victims-comp',
       'freefrom'
@@ -95,7 +94,7 @@ export const MATCH_RULES: MatchRule[] = [
     id: 'no-account',
     reason: 'You said you do not have an account only you can see.',
     when: (r) => answered(r, 'own-account', 'no', 'joint-only'),
-    resources: ['ga-gateway', 'united-way-211', 'freefrom'],
+    resources: ['united-way-211', 'freefrom'],
   },
   {
     id: 'spending-watched',
@@ -113,7 +112,7 @@ export const MATCH_RULES: MatchRule[] = [
     id: 'children',
     reason: 'You said there are children involved.',
     when: (r) => r.modifiers.includes('children'),
-    resources: ['atlanta-legal-aid', 'avlf', 'ga-legal-services', 'ga-gateway'],
+    resources: ['atlanta-legal-aid', 'ga-legal-services'],
   },
   {
     id: 'own-footing',
@@ -137,17 +136,17 @@ export const MATCH_RULES: MatchRule[] = [
     // promise the group would not be keeping.
     id: 'legal-anyway',
     reason: 'Free lawyers, whenever you want to know where you stand.',
-    resources: ['atlanta-legal-aid', 'ga-legal-services', 'avlf'],
+    resources: ['atlanta-legal-aid', 'ga-legal-services'],
   },
   {
     id: 'legal-reading',
     reason: 'If you would rather read it yourself first.',
-    resources: ['georgia-legal-aid-web', 'womenslaw'],
+    resources: ['womenslaw'],
   },
   {
     id: 'always-open',
     reason: 'Lines that are open whatever else is going on.',
-    resources: ['ndvh', 'victimconnect', '988-lifeline'],
+    resources: ['ndvh'],
   }
 ];
 
@@ -165,13 +164,7 @@ export const UNPROMPTED: MatchRule = {
   id: 'unprompted',
   reason: 'Not based on your answers — listed because they exist and might fit.',
   resources: [
-    'tapestri',
-    'raksha',
-    'gain',
-    'rainn',
-    'stronghearts',
-    'loveisrespect',
-    'trafficking-hotline'
+    
   ],
 };
 
