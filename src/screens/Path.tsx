@@ -11,8 +11,10 @@
  *   4. Tapping a step follows step.action:
  *        screen    -> navigation.navigate(action.screen)
  *        directory -> navigation.navigate('Directory', { filter: action.filter })
- *        call      -> the exit interstitial, NOT a direct dial
- *        external  -> the exit interstitial, NOT a direct link
+ *        call      -> confirmExit({ kind: 'call', number: action.number })
+ *        external  -> confirmExit({ kind: 'external', url: action.url })
+ *
+ *      via `const confirmExit = useExitWarning()`. Never call Linking directly.
  *
  * The interstitial is not optional. A call lands in her recent calls and a link
  * lands in browser history, and the app can warn her but can't clean up after

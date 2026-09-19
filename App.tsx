@@ -11,6 +11,7 @@
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { VaultProvider } from './src/state/VaultState';
 import { AppDataProvider } from './src/state/AppData';
+import { ExitWarningProvider } from './src/components/ExitWarning';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 export default function App() {
@@ -18,7 +19,9 @@ export default function App() {
     <SafeAreaProvider>
       <VaultProvider>
         <AppDataProvider>
-          <RootNavigator />
+          <ExitWarningProvider>
+            <RootNavigator />
+          </ExitWarningProvider>
         </AppDataProvider>
       </VaultProvider>
     </SafeAreaProvider>

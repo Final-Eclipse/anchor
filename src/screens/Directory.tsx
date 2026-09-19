@@ -11,10 +11,14 @@
  *   4. Each entry shows name, description, note, and how to reach them.
  *
  * Two things that are not negotiable:
- *   · Tapping a phone number or a link must go through the exit interstitial
- *     first. A call shows up in her recent calls; a link shows up in browser
- *     history. Warn, then let her choose. Offer "show me the number" as an
- *     alternative to dialling.
+ *   · Tapping a phone number or a link must go through the exit interstitial.
+ *     It's built and waiting for you — never call Linking yourself:
+ *
+ *       const confirmExit = useExitWarning();
+ *       confirmExit({ kind: 'call', number: resource.phone });
+ *       confirmExit({ kind: 'external', url: resource.url });
+ *
+ *     It explains the trace, and offers to show the number instead of dialling.
  *   · Don't show unverified entries as if they were checked. Lane C is calling
  *     each organisation now; `verified` flips to true only after a human
  *     confirms someone answers. While you're building, showing everything is
