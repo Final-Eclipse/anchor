@@ -9,13 +9,19 @@
  *   app    — the real interface, once she's through the unlock.
  */
 
+/**
+ * The disguise: a cycle tracker. Soft, friendly, and utterly unremarkable on a
+ * woman's phone — which is the entire point. It should look like every other
+ * app in this category and invite no curiosity whatsoever.
+ */
 export const decoy = {
-  bg: '#ffffff',
-  surface: '#f7f7f7',
-  text: '#1c1c1e',
-  subtle: '#8e8e93',
-  line: '#e5e5ea',
-  accent: '#d4a017',
+  bg: '#fdf7f7',
+  surface: '#ffffff',
+  text: '#3a2d33',
+  subtle: '#9b8a92',
+  line: '#f0e2e5',
+  accent: '#c9748c',
+  accentSoft: '#f7e6ea',
 };
 
 export const app = {
