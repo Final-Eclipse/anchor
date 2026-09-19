@@ -9,7 +9,7 @@
  */
 
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
 import { app, radius, space, type } from '../theme';
 import {
@@ -22,10 +22,14 @@ import {
   decryptJson,
   destroyVault,
 } from '../crypto/vault';
+import { deleteRecord } from '../crypto/recordStore';
+import { deleteDoc } from '../crypto/docStore';
 import { QUESTIONS } from '../data/questions';
 import { PATHS } from '../data/paths';
 import { RESOURCES, unverified } from '../data/resources';
 import { scoreAssessment } from '../data/scoring';
+import { useAppData } from '../state/AppData';
+import { useVault } from '../state/VaultState';
 
 type Line = { label: string; detail: string; ok: boolean };
 
@@ -33,6 +37,36 @@ export default function SetupCheck() {
   const [lines, setLines] = useState<Line[]>([]);
   const [running, setRunning] = useState(false);
   const [blocked, setBlocked] = useState<string | null>(null);
+  const { data } = useAppData();
+  const { panic } = useVault();
+
+  /**
+   * Wipes the vault, the saved state and every document, so the next launch is a
+   * genuine first run — safety notice, choose a code, all of it.
+   *
+   * Needed because there's no other way to get back to first run on a phone;
+   * Expo Go keeps the Keychain entry between reloads. Dev only, and it goes with
+   * this screen before judging.
+   */
+  function confirmReset() {
+    Alert.alert(
+      'Start over?',
+      'Deletes the code, everything saved, and every document on this phone. Cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete everything',
+          style: 'destructive',
+          onPress: async () => {
+            await Promise.all(data.docs.map((d) => deleteDoc(d.id)));
+            await deleteRecord();
+            await destroyVault();
+            panic(); // Drops the key and returns to the decoy.
+          },
+        },
+      ]
+    );
+  }
 
   async function run() {
     if (await isVaultSetUp()) {
@@ -134,6 +168,19 @@ export default function SetupCheck() {
             : `${failed} check${failed > 1 ? 's' : ''} failed.`}
         </Text>
       ) : null}
+
+      <View style={styles.resetBlock}>
+        <Text style={styles.resetHint}>
+          Testing the first-run flow? This is the only way back to it on a phone — Expo Go
+          keeps the code between reloads.
+        </Text>
+        <Pressable
+          onPress={confirmReset}
+          style={({ pressed }) => [styles.reset, pressed && styles.buttonPressed]}
+        >
+          <Text style={styles.resetText}>Start over</Text>
+        </Pressable>
+      </View>
     </Screen>
   );
 }
@@ -170,4 +217,20 @@ const styles = StyleSheet.create({
   verdict: { ...type.body, marginTop: space.sm },
   verdictOk: { color: app.accent },
   verdictBad: { color: app.danger },
+  resetBlock: {
+    marginTop: space.lg,
+    paddingTop: space.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: app.line,
+    gap: space.sm,
+  },
+  resetHint: { ...type.small, color: app.subtle },
+  reset: {
+    borderWidth: 1,
+    borderColor: app.danger,
+    borderRadius: radius.md,
+    paddingVertical: space.md,
+    alignItems: 'center',
+  },
+  resetText: { ...type.body, color: app.danger, fontWeight: '600' },
 });
