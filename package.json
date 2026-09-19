@@ -31,7 +31,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "check": "tsc --noEmit && tsx scripts/check-content.ts"
+    "check": "tsc --noEmit && tsx scripts/check-content.ts && tsx scripts/check-migration.mts"
   },
   "private": true
 }

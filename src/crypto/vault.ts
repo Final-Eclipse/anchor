@@ -47,12 +47,26 @@ const SALT_BYTES = 16;
  */
 const PBKDF2_ITERATIONS = 18_000;
 
+/**
+ * Counts we have shipped before. A record written under one of these has no
+ * `iterations` field, so unlock falls back to trying them in order.
+ *
+ * This exists because changing the count silently broke every existing vault:
+ * the key is wrapped under a key derived with a specific count, so deriving with
+ * a different one produces the wrong key and looks exactly like a wrong code.
+ * Every record now stores the count it was written with, and anything older gets
+ * migrated on the next successful unlock. Never remove a value from this list.
+ */
+const LEGACY_ITERATIONS = [30_000, 100_000];
+
 interface WrappedKeyRecord {
   v: 1;
   /** PBKDF2 salt, hex. Not secret. */
   salt: string;
   /** The data key sealed under the PIN-derived key. Base64, IV included. */
   wrapped: string;
+  /** PBKDF2 count this record was written with. Absent on pre-migration records. */
+  iterations?: number;
   /** Consecutive wrong codes. Reset to zero on a correct one. */
   failures?: number;
   /** Epoch ms before which no attempt is accepted. */
@@ -108,8 +122,12 @@ function fromHex(hex: string): Uint8Array {
 // ───────────────────────────────────────────────────────── key lifecycle
 
 /** Turns a PIN into a key-encrypting key. Slow on purpose. */
-async function deriveKek(pin: string, salt: Uint8Array): Promise<AESEncryptionKey> {
-  const bytes = pbkdf2(sha256, pin, salt, { c: PBKDF2_ITERATIONS, dkLen: 32 });
+async function deriveKek(
+  pin: string,
+  salt: Uint8Array,
+  iterations: number = PBKDF2_ITERATIONS
+): Promise<AESEncryptionKey> {
+  const bytes = pbkdf2(sha256, pin, salt, { c: iterations, dkLen: 32 });
   return AESEncryptionKey.import(bytes);
 }
 
@@ -121,6 +139,7 @@ async function writeWrappedKey(key: AESEncryptionKey, pin: string): Promise<void
     v: 1,
     salt: toHex(salt),
     wrapped: await sealed.combined('base64'),
+    iterations: PBKDF2_ITERATIONS,
   };
   await setWrappedKey(JSON.stringify(record));
 }
@@ -152,32 +171,46 @@ export async function unlockVault(pin: string): Promise<UnlockResult> {
     return { ok: false, reason: 'locked', retryInMs: lockedUntil - Date.now() };
   }
 
-  try {
-    const sealed = AESSealedData.fromCombined(record.wrapped);
-    const kek = await deriveKek(pin, fromHex(record.salt));
-    const keyBytes = await aesDecryptAsync(sealed, kek, { output: 'bytes' });
-    dataKey = await AESEncryptionKey.import(keyBytes);
+  // A record written before iterations were stored could be under any count we
+  // once shipped, so try each until one authenticates.
+  const candidates = record.iterations ? [record.iterations] : LEGACY_ITERATIONS;
+  const salt = fromHex(record.salt);
+  const sealed = AESSealedData.fromCombined(record.wrapped);
 
-    if (record.failures) {
-      await setWrappedKey(JSON.stringify({ ...record, failures: 0, lockedUntil: 0 }));
+  for (const iterations of candidates) {
+    try {
+      const kek = await deriveKek(pin, salt, iterations);
+      const keyBytes = await aesDecryptAsync(sealed, kek, { output: 'bytes' });
+      dataKey = await AESEncryptionKey.import(keyBytes);
+
+      if (iterations !== PBKDF2_ITERATIONS) {
+        // Re-wrap at the current count so the next unlock is fast and this
+        // migration path stops being needed.
+        await writeWrappedKey(dataKey, pin);
+      } else if (record.failures) {
+        await setWrappedKey(JSON.stringify({ ...record, failures: 0, lockedUntil: 0 }));
+      }
+      return { ok: true };
+    } catch {
+      // Wrong count, or wrong code. Try the next candidate before deciding.
     }
-    return { ok: true };
-  } catch {
-    dataKey = null;
-
-    const failures = (record.failures ?? 0) + 1;
-    const wait = lockoutFor(failures);
-    await setWrappedKey(
-      JSON.stringify({
-        ...record,
-        failures,
-        lockedUntil: wait ? Date.now() + wait : 0,
-      })
-    );
-
-    if (wait) return { ok: false, reason: 'locked', retryInMs: wait };
-    return { ok: false, reason: 'wrong', attemptsBeforeWait: 4 - failures };
   }
+
+  // Every candidate failed, so the code is wrong.
+  dataKey = null;
+
+  const failures = (record.failures ?? 0) + 1;
+  const wait = lockoutFor(failures);
+  await setWrappedKey(
+    JSON.stringify({
+      ...record,
+      failures,
+      lockedUntil: wait ? Date.now() + wait : 0,
+    })
+  );
+
+  if (wait) return { ok: false, reason: 'locked', retryInMs: wait };
+  return { ok: false, reason: 'wrong', attemptsBeforeWait: 4 - failures };
 }
 
 /** Call on panic exit, and on every AppState change out of 'active'. */
