@@ -132,6 +132,15 @@ export default function Vault() {
 
       {busy ? <ActivityIndicator color={app.accent} /> : null}
 
+      {/* The vault is a safe place for copies, not a replacement for originals.
+          Someone who deletes the original after photographing it has made this
+          app a single point of failure — and if she ever loses her code, that
+          document is gone. Say it plainly, where she'll read it. */}
+      <Text style={styles.keepOriginals}>
+        Keep the originals wherever they are. This is somewhere safe for copies, not a
+        replacement — if you ever lose your code, anything only stored here goes with it.
+      </Text>
+
       <Modal visible={viewing !== null} transparent animationType="fade">
         <View style={styles.viewer}>
           <Pressable style={styles.viewerClose} onPress={() => setViewing(null)}>
@@ -156,6 +165,13 @@ const styles = StyleSheet.create({
   addText: { ...type.body, color: app.bg, fontWeight: '700' },
   pressed: { opacity: 0.7 },
   empty: { ...type.body, color: app.subtle },
+  keepOriginals: {
+    ...type.small,
+    color: app.gold,
+    backgroundColor: app.surface,
+    borderRadius: radius.sm,
+    padding: space.sm,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
