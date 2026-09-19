@@ -1,5 +1,11 @@
 /**
- * Accepting help without it leaving a trail.
+ * Where the money actually comes from, and what each way leaves behind.
+ *
+ * Three sections, and the first one matters most: money from her own life. The
+ * screen originally covered only help from other people, which quietly assumed
+ * somebody was handing her something. Usually nobody is — so it opens with cash
+ * back at the checkout and rounding up the shopping, which produce no
+ * transaction anyone can point at.
  *
  * This is what a peer-to-peer payment feature became after we looked at it
  * properly. Transfers would have needed a server, accounts and a user directory,
@@ -14,7 +20,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
 import { app, radius, space, type } from '../theme';
-import { RECEIVING, ASKING, type HelpMethod } from '../data/trustedHelp';
+import { RECEIVING, ASKING, FROM_HER_OWN, type HelpMethod } from '../data/trustedHelp';
 
 const TRACE_LABEL: Record<HelpMethod['trace'], string> = {
   none: 'Leaves no record',
@@ -40,13 +46,18 @@ function Method({ method }: { method: HelpMethod }) {
 
 export default function TrustedHelp() {
   return (
-    <Screen title="Help from someone you trust" subtitle="Which ways leave a record, and which don't.">
+    <Screen title="Where money comes from" subtitle="Which ways leave a record, and which don't.">
       <Text style={styles.intro}>
-        People will want to help. How they send it matters more than how much — the fastest
-        option on their phone is usually the most visible one on yours.
+        Most of this is money you already have or are already owed — it just has to arrive
+        somewhere he isn’t looking. How it gets to you matters more than how much.
       </Text>
 
-      <Text style={styles.sectionLabel}>WAYS TO RECEIVE IT</Text>
+      <Text style={styles.sectionLabel}>FROM YOUR OWN LIFE</Text>
+      {FROM_HER_OWN.map((m) => (
+        <Method key={m.title} method={m} />
+      ))}
+
+      <Text style={styles.sectionLabel}>FROM SOMEONE WHO WANTS TO HELP</Text>
       {RECEIVING.map((m) => (
         <Method key={m.title} method={m} />
       ))}

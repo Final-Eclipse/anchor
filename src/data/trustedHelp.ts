@@ -48,6 +48,43 @@ export const RECEIVING: HelpMethod[] = [
   },
 ];
 
+/**
+ * Money from her own life. This is the half the screen was missing: everything
+ * else here assumes somebody else is handing her something, and most of the time
+ * nobody is.
+ *
+ * These are standard safety-planning techniques, and the common thread is that
+ * none of them create a transaction he can point at. A withdrawal is a question.
+ * A grocery bill is not.
+ */
+export const FROM_HER_OWN: HelpMethod[] = [
+  {
+    title: 'Cash back at the checkout',
+    body: 'Ask for cash back when you buy groceries. It comes out as part of the shopping total, not as a separate withdrawal — one line on the statement, the same as every other week.',
+    trace: 'none',
+  },
+  {
+    title: 'Round the shopping up',
+    body: 'If the food comes to sixty-five, ask for eighty. The difference is yours, and nothing about the number looks unusual.',
+    trace: 'none',
+  },
+  {
+    title: 'Sell something he won’t miss',
+    body: 'Things you own, from before or since. Sell for cash where you can — an app that pays into an account leaves a record on both sides.',
+    trace: 'low',
+  },
+  {
+    title: 'Your tax refund',
+    body: 'A refund can go somewhere other than the usual account, and filing separately changes who sees what. Legal aid can tell you what applies to you before you file.',
+    trace: 'low',
+  },
+  {
+    title: 'Part of your pay, if you earn',
+    body: 'Some employers will split a direct deposit across two accounts. Even a small share going somewhere he cannot see adds up without changing what he sees arrive.',
+    trace: 'low',
+  },
+];
+
 export const ASKING: HelpMethod[] = [
   {
     title: 'Tell them how, not just what',
