@@ -19,7 +19,6 @@
  * Everything here is async. Native crypto and Keychain access both are.
  */
 
-import * as SecureStore from 'expo-secure-store';
 import {
   getRandomBytesAsync,
   AESEncryptionKey,
@@ -30,8 +29,8 @@ import {
 } from 'expo-crypto';
 import { pbkdf2 } from '@noble/hashes/pbkdf2.js';
 import { sha256 } from '@noble/hashes/sha2.js';
+import { getWrappedKey, setWrappedKey, deleteWrappedKey } from './keyStore';
 
-const WRAPPED_KEY_ITEM = 'anchor.wrapped_key';
 const SALT_BYTES = 16;
 
 /**
@@ -46,15 +45,6 @@ const SALT_BYTES = 16;
  * you build the real unlock screen.
  */
 const PBKDF2_ITERATIONS = 30_000;
-
-/**
- * iOS syncs Keychain items to iCloud Keychain unless told otherwise, which would
- * put the wrapped key on every device signed into the same Apple account. On a
- * shared family account that is precisely the leak this app exists to prevent.
- */
-const SECURE_STORE_OPTS: SecureStore.SecureStoreOptions = {
-  keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-};
 
 interface WrappedKeyRecord {
   v: 1;
@@ -102,11 +92,11 @@ async function writeWrappedKey(key: AESEncryptionKey, pin: string): Promise<void
     salt: toHex(salt),
     wrapped: await sealed.combined('base64'),
   };
-  await SecureStore.setItemAsync(WRAPPED_KEY_ITEM, JSON.stringify(record), SECURE_STORE_OPTS);
+  await setWrappedKey(JSON.stringify(record));
 }
 
 export async function isVaultSetUp(): Promise<boolean> {
-  return (await SecureStore.getItemAsync(WRAPPED_KEY_ITEM, SECURE_STORE_OPTS)) !== null;
+  return (await getWrappedKey()) !== null;
 }
 
 /** First run. Generates the data key and leaves the vault unlocked. */
@@ -121,7 +111,7 @@ export async function setupVault(pin: string): Promise<void> {
  * producing any output, so a wrong guess reveals nothing about the key.
  */
 export async function unlockVault(pin: string): Promise<boolean> {
-  const stored = await SecureStore.getItemAsync(WRAPPED_KEY_ITEM, SECURE_STORE_OPTS);
+  const stored = await getWrappedKey();
   if (!stored) return false;
 
   const record: WrappedKeyRecord = JSON.parse(stored);
@@ -190,5 +180,5 @@ export async function decryptJson<T>(blob: string): Promise<T> {
  */
 export async function destroyVault(): Promise<void> {
   lockVault();
-  await SecureStore.deleteItemAsync(WRAPPED_KEY_ITEM, SECURE_STORE_OPTS);
+  await deleteWrappedKey();
 }

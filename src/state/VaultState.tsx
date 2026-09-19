@@ -31,7 +31,10 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const [unlocked, setUnlocked] = useState(false);
 
   useEffect(() => {
-    isVaultSetUp().then(setHasVault);
+    // If the check fails we treat it as "no vault" rather than leaving hasVault
+    // null forever — that state silently shows the wrong prompt and strands her
+    // on a screen with no way forward.
+    isVaultSetUp().then(setHasVault, () => setHasVault(false));
   }, []);
 
   useEffect(() => {

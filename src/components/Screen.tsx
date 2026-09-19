@@ -19,6 +19,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { app, radius, space, type } from '../theme';
 import { usePanic } from '../state/VaultState';
+import { isSecureStorage } from '../crypto/keyStore';
 
 interface Props {
   title: string;
@@ -53,6 +54,12 @@ export function Screen({ title, subtitle, children, scroll = true }: Props) {
   const body = (
     <>
       {header}
+      {isSecureStorage ? null : (
+        <Text style={styles.insecure}>
+          Running in a browser — storage here is not secure. Build screens this way, but
+          never demo or test real data from it.
+        </Text>
+      )}
       {children}
     </>
   );
@@ -84,4 +91,11 @@ const styles = StyleSheet.create({
   },
   panicPressed: { opacity: 0.6 },
   panicText: { color: app.subtle, ...type.small, fontWeight: '600' },
+  insecure: {
+    ...type.small,
+    color: app.gold,
+    backgroundColor: app.surface,
+    borderRadius: radius.sm,
+    padding: space.sm,
+  },
 });
