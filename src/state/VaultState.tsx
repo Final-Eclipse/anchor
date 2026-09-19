@@ -16,6 +16,7 @@ import {
   setupVault,
   unlockVault,
   lockVault,
+  destroyVault,
   type UnlockResult,
 } from '../crypto/vault';
 
@@ -28,6 +29,15 @@ interface VaultState {
   create: (pin: string) => Promise<void>;
   /** Drops the key and returns to the decoy. Safe to call from anywhere. */
   panic: () => void;
+  /**
+   * Deletes the code and locks. Anything encrypted under it becomes permanently
+   * unreadable, so callers confirm first.
+   *
+   * Must go through here rather than calling destroyVault() directly — this is
+   * what tells the app the vault is gone. Skipping it leaves the UI asking for a
+   * code that no longer exists, which reads to the user as "wrong code".
+   */
+  destroy: () => Promise<void>;
 }
 
 const Ctx = createContext<VaultState | null>(null);
@@ -68,6 +78,11 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     },
     panic() {
       lockVault();
+      setUnlocked(false);
+    },
+    async destroy() {
+      await destroyVault();
+      setHasVault(false);
       setUnlocked(false);
     },
   };

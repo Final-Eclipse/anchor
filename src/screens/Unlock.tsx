@@ -65,7 +65,10 @@ export function Unlock({ onCancel }: { onCancel: () => void }) {
                 : 'Not quite.'
             );
           } else {
-            setError('Not quite.');
+            // 'no-vault' — nothing to unlock. Shouldn't happen now that destroy()
+            // updates the app's state, but saying "wrong code" for a vault that
+            // doesn't exist is the most confusing message we could give.
+            setError('No code is set on this phone yet. Go back and start again.');
           }
         }
       }

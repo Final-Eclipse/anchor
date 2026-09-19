@@ -9,7 +9,7 @@
  */
 
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
 import { app, radius, space, type } from '../theme';
 import {
@@ -30,6 +30,7 @@ import { RESOURCES, unverified } from '../data/resources';
 import { scoreAssessment } from '../data/scoring';
 import { useAppData } from '../state/AppData';
 import { useVault } from '../state/VaultState';
+import { useConfirm } from '../components/Confirm';
 
 type Line = { label: string; detail: string; ok: boolean };
 
@@ -38,7 +39,8 @@ export default function SetupCheck() {
   const [running, setRunning] = useState(false);
   const [blocked, setBlocked] = useState<string | null>(null);
   const { data } = useAppData();
-  const { panic } = useVault();
+  const { destroy } = useVault();
+  const confirm = useConfirm();
 
   /**
    * Wipes the vault, the saved state and every document, so the next launch is a
@@ -48,24 +50,21 @@ export default function SetupCheck() {
    * Expo Go keeps the Keychain entry between reloads. Dev only, and it goes with
    * this screen before judging.
    */
-  function confirmReset() {
-    Alert.alert(
-      'Start over?',
-      'Deletes the code, everything saved, and every document on this phone. Cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete everything',
-          style: 'destructive',
-          onPress: async () => {
-            await Promise.all(data.docs.map((d) => deleteDoc(d.id)));
-            await deleteRecord();
-            await destroyVault();
-            panic(); // Drops the key and returns to the decoy.
-          },
-        },
-      ]
-    );
+  async function confirmReset() {
+    const yes = await confirm({
+      title: 'Start over?',
+      body: 'Deletes the code, everything saved, and every document on this phone. Cannot be undone.',
+      confirmLabel: 'Delete everything',
+      cancelLabel: 'Keep it',
+      destructive: true,
+    });
+    if (!yes) return;
+
+    await Promise.all(data.docs.map((d) => deleteDoc(d.id)));
+    await deleteRecord();
+    // destroy() rather than destroyVault(), so the app knows the code is gone
+    // and offers to set a new one instead of asking for the old.
+    await destroy();
   }
 
   async function run() {

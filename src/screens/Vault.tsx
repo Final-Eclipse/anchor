@@ -20,7 +20,6 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Modal,
   Pressable,
@@ -35,10 +34,12 @@ import { app, radius, space, type } from '../theme';
 import { encryptBase64, decryptToBase64 } from '../crypto/vault';
 import { writeDoc, readDoc, deleteDoc } from '../crypto/docStore';
 import { useAppData } from '../state/AppData';
+import { useConfirm } from '../components/Confirm';
 import type { VaultDocMeta } from '../data/types';
 
 export default function Vault() {
   const { data, update } = useAppData();
+  const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
   const [viewing, setViewing] = useState<{ meta: VaultDocMeta; uri: string } | null>(null);
 
@@ -81,18 +82,18 @@ export default function Vault() {
     }
   }
 
-  function confirmRemove(meta: VaultDocMeta) {
-    Alert.alert('Remove this document?', 'It will be deleted from this phone. This cannot be undone.', [
-      { text: 'Keep it', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: async () => {
-          await deleteDoc(meta.id);
-          await update((d) => ({ docs: d.docs.filter((x) => x.id !== meta.id) }));
-        },
-      },
-    ]);
+  async function confirmRemove(meta: VaultDocMeta) {
+    const yes = await confirm({
+      title: 'Remove this document?',
+      body: 'It will be deleted from this phone. This cannot be undone.',
+      confirmLabel: 'Remove',
+      cancelLabel: 'Keep it',
+      destructive: true,
+    });
+    if (!yes) return;
+
+    await deleteDoc(meta.id);
+    await update((d) => ({ docs: d.docs.filter((x) => x.id !== meta.id) }));
   }
 
   return (
