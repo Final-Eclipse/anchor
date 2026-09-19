@@ -138,18 +138,6 @@ export const RESOURCES: Resource[] = [
     note: '24/7 · call or text 988 · chat at chat.988lifeline.org',
     verified: false,
   },
-  {
-    id: 'gcal',
-    name: 'Georgia Crisis and Access Line',
-    categories: ['hotline'],
-    area: 'georgia',
-    description:
-      "Georgia's own crisis line for mental health and substance use. They can send a mobile team to you.",
-    phone: '1-800-715-4225',
-    url: 'https://dbhdd.georgia.gov/be-dbhdd/988-georgia',
-    note: '24/7 · works alongside 988 in Georgia',
-    verified: false,
-  },
 
   // ───────────────────────── local domestic violence programmes, by county
   {
@@ -222,17 +210,6 @@ export const RESOURCES: Resource[] = [
     phone: '404-876-0670',
     url: 'https://www.raksha.org/',
     note: 'Mon–Fri 9am–5pm · not a crisis line',
-    verified: false,
-  },
-  {
-    id: 'cpacs',
-    name: 'Center for Pan Asian Community Services',
-    categories: ['hotline'],
-    area: 'metro-atlanta',
-    description:
-      'Multilingual health and social services in Atlanta, including domestic violence support for Asian and immigrant communities.',
-    url: 'https://www.cpacs.org/',
-    note: 'No public service line found yet — use the website to reach them',
     verified: false,
   },
   {
@@ -369,18 +346,6 @@ export const RESOURCES: Resource[] = [
     verified: false,
   },
   {
-    id: 'atlanta-food-bank',
-    name: 'Atlanta Community Food Bank',
-    categories: ['emergency-cash'],
-    area: 'metro-atlanta',
-    description:
-      'Their map finds free food pantries near you. Money not spent on groceries is money that can go somewhere else.',
-    phone: '404-892-3333',
-    url: 'https://www.acfb.org/get-help/',
-    note: 'Over 700 partner sites across metro Atlanta',
-    verified: false,
-  },
-  {
     id: 'freefrom',
     name: 'FreeFrom',
     categories: ['emergency-cash'],
@@ -393,30 +358,6 @@ export const RESOURCES: Resource[] = [
   },
 
   // ───────────────────────────────────────────── somewhere to stay, housing
-  {
-    id: 'gateway-center',
-    name: 'Gateway Center',
-    categories: ['housing', 'shelter'],
-    area: 'downtown-atlanta',
-    description:
-      "Downtown Atlanta's front door to housing help. They assess what you need and route you to a programme that has room.",
-    phone: '404-215-6600',
-    url: 'https://gatewayctr.org/',
-    note: '275 Pryor St SW, Atlanta · not a domestic violence shelter',
-    verified: false,
-  },
-  {
-    id: 'nicholas-house',
-    name: 'Nicholas House',
-    categories: ['housing', 'shelter'],
-    area: 'metro-atlanta',
-    description:
-      'Shelter and rent help for families with children, including help staying housed before it gets to an eviction.',
-    phone: '404-622-0793',
-    url: 'https://nicholashouse.org/',
-    note: 'Families with children · 830 Boulevard SE, Atlanta',
-    verified: false,
-  },
 
   // ───────────────────────────────────────────────────── work and training
   {
@@ -429,52 +370,6 @@ export const RESOURCES: Resource[] = [
     phone: '404-892-3476',
     url: 'https://www.ywcaatlanta.org/',
     verified: true,
-  },
-  {
-    id: 'goodwill-north-georgia',
-    name: 'Goodwill of North Georgia',
-    categories: ['job-training'],
-    area: 'metro-atlanta',
-    description:
-      'Fourteen career centres offering free job training, a computer to use, and a coach who helps you apply.',
-    phone: '404-420-9900',
-    url: 'https://www.goodwillng.org/',
-    note: 'Free · no purchase or donation needed',
-    verified: false,
-  },
-  {
-    id: 'latin-american-association',
-    name: 'Latin American Association',
-    categories: ['job-training', 'legal', 'emergency-cash'],
-    area: 'metro-atlanta',
-    description:
-      'Job programmes, low-cost immigration lawyers, and help with rent, utilities and food, for the Latino community in Georgia.',
-    phone: '404-638-1800',
-    url: 'https://thelaa.org/',
-    note: 'Spanish spoken · Atlanta, Gwinnett and Dalton',
-    verified: false,
-  },
-  {
-    id: 'jfcs-atlanta',
-    name: 'Jewish Family & Career Services of Atlanta',
-    categories: ['job-training'],
-    area: 'metro-atlanta',
-    description:
-      'Career coaching, job search help and counselling. Open to everyone, whatever your faith.',
-    phone: '770-677-9300',
-    url: 'https://www.jfcsatl.org/',
-    verified: false,
-  },
-  {
-    id: 'ga-dol',
-    name: 'Georgia Department of Labor',
-    categories: ['job-training'],
-    area: 'georgia',
-    description:
-      'State career centres across Georgia for job search help, training referrals and unemployment claims.',
-    url: 'https://dol.georgia.gov/',
-    note: 'Website · find your nearest career centre there',
-    verified: false,
   },
 ];
 

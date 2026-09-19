@@ -88,9 +88,8 @@ export const MATCH_RULES: MatchRule[] = [
       'ga-gateway',
       'united-way-211',
       'ga-victims-comp',
-      'freefrom',
-      'atlanta-food-bank',
-    ],
+      'freefrom'
+      ],
   },
   {
     id: 'no-account',
@@ -108,19 +107,19 @@ export const MATCH_RULES: MatchRule[] = [
     id: 'income-of-your-own',
     reason: 'Free places to start, if you want income of your own.',
     when: (r) => answered(r, 'own-income', 'none', 'controlled'),
-    resources: ['goodwill-north-georgia', 'ywca-atlanta', 'jfcs-atlanta', 'ga-dol'],
+    resources: ['ywca-atlanta'],
   },
   {
     id: 'children',
     reason: 'You said there are children involved.',
     when: (r) => r.modifiers.includes('children'),
-    resources: ['atlanta-legal-aid', 'avlf', 'ga-legal-services', 'nicholas-house', 'ga-gateway'],
+    resources: ['atlanta-legal-aid', 'avlf', 'ga-legal-services', 'ga-gateway'],
   },
   {
     id: 'own-footing',
     reason: 'You said you already have some footing of your own.',
     when: (r) => r.pathId === 'partly-independent',
-    resources: ['ywca-atlanta', 'goodwill-north-georgia', 'jfcs-atlanta', 'ga-dol'],
+    resources: ['ywca-atlanta'],
   },
   {
     // Kept apart from own-footing on purpose. Two of these are homelessness
@@ -129,7 +128,7 @@ export const MATCH_RULES: MatchRule[] = [
     id: 'somewhere-of-your-own',
     reason: 'Housing help, if the next step is somewhere of your own.',
     when: (r) => r.pathId === 'partly-independent',
-    resources: ['united-way-211', 'gateway-center', 'nicholas-house'],
+    resources: ['united-way-211'],
   },
   {
     // Only organisations that actually put a lawyer on the phone. The websites
@@ -148,8 +147,8 @@ export const MATCH_RULES: MatchRule[] = [
   {
     id: 'always-open',
     reason: 'Lines that are open whatever else is going on.',
-    resources: ['ndvh', 'victimconnect', '988-lifeline', 'gcal'],
-  },
+    resources: ['ndvh', 'victimconnect', '988-lifeline'],
+  }
 ];
 
 /**
@@ -168,13 +167,11 @@ export const UNPROMPTED: MatchRule = {
   resources: [
     'tapestri',
     'raksha',
-    'cpacs',
-    'latin-american-association',
     'gain',
     'rainn',
     'stronghearts',
     'loveisrespect',
-    'trafficking-hotline',
+    'trafficking-hotline'
   ],
 };
 

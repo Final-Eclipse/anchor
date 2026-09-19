@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { app, radius, space, type } from '../theme';
 import { useVault } from '../state/VaultState';
 import { SafetyNotice } from './SafetyNotice';
+import { ForgotCode } from './ForgotCode';
 
 const PIN_LENGTH = 6;
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
@@ -27,6 +28,7 @@ export function Unlock({ onCancel }: { onCancel: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [noticeSeen, setNoticeSeen] = useState(false);
+  const [forgot, setForgot] = useState(false);
 
   const creating = hasVault === false;
   const confirming = creating && firstEntry !== null;
@@ -92,6 +94,8 @@ export function Unlock({ onCancel }: { onCancel: () => void }) {
 
   const insets = useSafeAreaInsets();
 
+  if (forgot) return <ForgotCode onBack={() => setForgot(false)} />;
+
   // First run: say what this can and can't do before she commits anything to it.
   if (creating && !noticeSeen) {
     return <SafetyNotice onContinue={() => setNoticeSeen(true)} onCancel={onCancel} />;
@@ -123,6 +127,12 @@ export function Unlock({ onCancel }: { onCancel: () => void }) {
         <Text style={styles.error}>{busy ? ' ' : (error ?? ' ')}</Text>
         {busy ? <ActivityIndicator color={app.accent} /> : <View style={styles.spinnerSlot} />}
       </View>
+
+      {!creating ? (
+        <Pressable onPress={() => setForgot(true)} hitSlop={10} style={styles.forgot}>
+          <Text style={styles.forgotText}>I don't remember my code</Text>
+        </Pressable>
+      ) : null}
 
       <View style={styles.pad}>
         {KEYS.map((key, i) => (
@@ -161,6 +171,8 @@ const styles = StyleSheet.create({
   dotFilled: { backgroundColor: app.accent, borderColor: app.accent },
   error: { ...type.small, color: app.danger, height: 18 },
   spinnerSlot: { height: 20 },
+  forgot: { alignSelf: 'center', paddingVertical: space.sm, marginBottom: space.sm },
+  forgotText: { ...type.small, color: app.subtle },
   pad: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, justifyContent: 'center' },
   key: {
     width: '30%',
