@@ -25,10 +25,14 @@ import { StyleSheet, Text } from 'react-native';
 import { Screen } from '../components/Screen';
 import { app, space, type } from '../theme';
 import { PATHS } from '../data/paths';
+import { useAppData } from '../state/AppData';
 import type { ScreenProps } from '../navigation/types';
 
 export default function Path({ route }: ScreenProps<'Path'>) {
-  const pathId = route.params?.pathId ?? 'no-money-of-her-own';
+  const { data } = useAppData();
+  // Route param wins (she just finished the intake); otherwise fall back to the
+  // saved result, so returning to this screen later still shows her plan.
+  const pathId = route.params?.pathId ?? data.assessment?.pathId ?? 'no-money-of-her-own';
   const path = PATHS[pathId];
 
   return (

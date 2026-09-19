@@ -10,13 +10,16 @@
 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { VaultProvider } from './src/state/VaultState';
+import { AppDataProvider } from './src/state/AppData';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 export default function App() {
   return (
     <SafeAreaProvider>
       <VaultProvider>
-        <RootNavigator />
+        <AppDataProvider>
+          <RootNavigator />
+        </AppDataProvider>
       </VaultProvider>
     </SafeAreaProvider>
   );

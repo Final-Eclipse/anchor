@@ -6,7 +6,14 @@
  *   1. Show one question at a time from QUESTIONS (src/data/questions.ts).
  *   2. Collect answers as { [question.id]: option.value }.
  *   3. When she finishes — or taps Skip to the end — call
- *      scoreAssessment(answers, QUESTIONS) and navigate to 'Path'.
+ *      scoreAssessment(answers, QUESTIONS), save it, and go to 'Path':
+ *
+ *        const { update } = useAppData();
+ *        const result = scoreAssessment(answers, QUESTIONS);
+ *        await update({ assessment: result });
+ *        navigation.navigate('Path', { pathId: result.pathId });
+ *
+ *      `update` encrypts and saves for you. Don't touch the filesystem directly.
  *
  * Rules that matter here:
  *   · Every question must be skippable. She may have very little private time,
