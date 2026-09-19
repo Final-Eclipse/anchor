@@ -11,14 +11,20 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
-import { isVaultSetUp, setupVault, unlockVault, lockVault } from '../crypto/vault';
+import {
+  isVaultSetUp,
+  setupVault,
+  unlockVault,
+  lockVault,
+  type UnlockResult,
+} from '../crypto/vault';
 
 interface VaultState {
   /** null while we're still checking the device. */
   hasVault: boolean | null;
   unlocked: boolean;
-  /** Returns false on the wrong PIN. */
-  open: (pin: string) => Promise<boolean>;
+  /** Says why it failed, so the screen can explain a wait rather than just "no". */
+  open: (pin: string) => Promise<UnlockResult>;
   create: (pin: string) => Promise<void>;
   /** Drops the key and returns to the decoy. Safe to call from anywhere. */
   panic: () => void;
@@ -51,9 +57,9 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     hasVault,
     unlocked,
     async open(pin) {
-      const ok = await unlockVault(pin);
-      setUnlocked(ok);
-      return ok;
+      const result = await unlockVault(pin);
+      setUnlocked(result.ok);
+      return result;
     },
     async create(pin) {
       await setupVault(pin);

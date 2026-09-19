@@ -52,7 +52,36 @@ interface WrappedKeyRecord {
   salt: string;
   /** The data key sealed under the PIN-derived key. Base64, IV included. */
   wrapped: string;
+  /** Consecutive wrong codes. Reset to zero on a correct one. */
+  failures?: number;
+  /** Epoch ms before which no attempt is accepted. */
+  lockedUntil?: number;
 }
+
+/**
+ * What a wrong code costs, by consecutive failure count. The realistic attack
+ * is him picking up her phone and trying the dates he knows — birthdays,
+ * anniversaries — not a patient search. Making the fourth guess cost thirty
+ * seconds ends that entirely.
+ *
+ * Be honest about what this doesn't do: someone who extracts the Keychain item
+ * can attack the wrapped key offline, where none of this applies. PBKDF2 is what
+ * slows that down, and a six-digit code is what limits it. This handles the
+ * attacker who is actually holding the phone.
+ */
+function lockoutFor(failures: number): number {
+  if (failures < 4) return 0;
+  if (failures === 4) return 30_000;
+  if (failures === 5) return 60_000;
+  if (failures === 6) return 5 * 60_000;
+  return 15 * 60_000;
+}
+
+export type UnlockResult =
+  | { ok: true }
+  | { ok: false; reason: 'wrong'; attemptsBeforeWait: number }
+  | { ok: false; reason: 'locked'; retryInMs: number }
+  | { ok: false; reason: 'no-vault' };
 
 /**
  * The unwrapped data key, present only while unlocked. It is an opaque native
@@ -107,23 +136,46 @@ export async function setupVault(pin: string): Promise<void> {
 }
 
 /**
- * Returns false on the wrong PIN. GCM authentication fails and throws before
- * producing any output, so a wrong guess reveals nothing about the key.
+ * A wrong code fails GCM authentication, which throws before producing any
+ * output — a wrong guess reveals nothing about the key. Repeated wrong guesses
+ * cost increasing amounts of time; see lockoutFor.
  */
-export async function unlockVault(pin: string): Promise<boolean> {
+export async function unlockVault(pin: string): Promise<UnlockResult> {
   const stored = await getWrappedKey();
-  if (!stored) return false;
+  if (!stored) return { ok: false, reason: 'no-vault' };
 
   const record: WrappedKeyRecord = JSON.parse(stored);
+
+  const lockedUntil = record.lockedUntil ?? 0;
+  if (lockedUntil > Date.now()) {
+    return { ok: false, reason: 'locked', retryInMs: lockedUntil - Date.now() };
+  }
+
   try {
     const sealed = AESSealedData.fromCombined(record.wrapped);
     const kek = await deriveKek(pin, fromHex(record.salt));
     const keyBytes = await aesDecryptAsync(sealed, kek, { output: 'bytes' });
     dataKey = await AESEncryptionKey.import(keyBytes);
-    return true;
+
+    if (record.failures) {
+      await setWrappedKey(JSON.stringify({ ...record, failures: 0, lockedUntil: 0 }));
+    }
+    return { ok: true };
   } catch {
     dataKey = null;
-    return false;
+
+    const failures = (record.failures ?? 0) + 1;
+    const wait = lockoutFor(failures);
+    await setWrappedKey(
+      JSON.stringify({
+        ...record,
+        failures,
+        lockedUntil: wait ? Date.now() + wait : 0,
+      })
+    );
+
+    if (wait) return { ok: false, reason: 'locked', retryInMs: wait };
+    return { ok: false, reason: 'wrong', attemptsBeforeWait: 4 - failures };
   }
 }
 
@@ -138,7 +190,8 @@ export function isUnlocked(): boolean {
 
 /** Re-wraps the same data key under a new PIN, so stored records stay readable. */
 export async function changePin(currentPin: string, nextPin: string): Promise<boolean> {
-  if (!(await unlockVault(currentPin)) || !dataKey) return false;
+  const result = await unlockVault(currentPin);
+  if (!result.ok || !dataKey) return false;
   await writeWrappedKey(dataKey, nextPin);
   return true;
 }

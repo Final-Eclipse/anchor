@@ -102,12 +102,12 @@ export default function SetupCheck() {
       add('Lock', isUnlocked() ? 'still unlocked' : 'key dropped', !isUnlocked());
 
       const wrong = await unlockVault('000000');
-      add('Wrong PIN rejected', wrong ? 'ACCEPTED — BUG' : 'rejected', !wrong);
+      add('Wrong PIN rejected', wrong.ok ? 'ACCEPTED — BUG' : 'rejected', !wrong.ok);
 
       t = Date.now();
       const right = await unlockVault('482100');
       const unlockMs = Date.now() - t;
-      add('Correct PIN accepted', `${unlockMs} ms`, right);
+      add('Correct PIN accepted', `${unlockMs} ms`, right.ok);
       add(
         'Unlock budget',
         unlockMs < 1000 ? `${unlockMs} ms — fine` : `${unlockMs} ms — lower PBKDF2_ITERATIONS`,

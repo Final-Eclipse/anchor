@@ -47,10 +47,26 @@ export function Unlock({ onCancel }: { onCancel: () => void }) {
           setPin('');
         }
       } else {
-        const ok = await open(value);
-        if (!ok) {
-          setError('Not quite.');
+        const result = await open(value);
+        if (!result.ok) {
           setPin('');
+          if (result.reason === 'locked') {
+            const mins = Math.ceil(result.retryInMs / 60_000);
+            const secs = Math.ceil(result.retryInMs / 1000);
+            setError(
+              secs <= 60
+                ? `Too many tries. Wait ${secs} seconds.`
+                : `Too many tries. Wait ${mins} minutes.`
+            );
+          } else if (result.reason === 'wrong') {
+            setError(
+              result.attemptsBeforeWait <= 1
+                ? 'Not quite. One more try before a wait.'
+                : 'Not quite.'
+            );
+          } else {
+            setError('Not quite.');
+          }
         }
       }
     } finally {
