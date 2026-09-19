@@ -23,6 +23,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { decoy, radius, space, type } from '../theme';
+import { readDecoy, writeDecoy } from '../state/decoyStore';
 import { Unlock } from './Unlock';
 
 const CYCLE_LENGTH = 28;
@@ -47,19 +48,28 @@ function cycleInfo() {
   return { today, started, dayOfCycle, daysUntilNext, week };
 }
 
+/** Symptoms are logged against a date, so they clear naturally on a new day. */
+function loadLogged(): string[] {
+  const saved = readDecoy();
+  const todayKey = new Date().toDateString();
+  return saved && saved.day === todayKey ? saved.logged : [];
+}
+
 export function Decoy() {
   const insets = useSafeAreaInsets();
   const [entering, setEntering] = useState(false);
-  const [logged, setLogged] = useState<string[]>([]);
+  const [logged, setLogged] = useState<string[]>(loadLogged);
 
   if (entering) return <Unlock onCancel={() => setEntering(false)} />;
 
   const { today, started, dayOfCycle, daysUntilNext, week } = cycleInfo();
 
   function toggle(symptom: string) {
-    setLogged((prev) =>
-      prev.includes(symptom) ? prev.filter((s) => s !== symptom) : [...prev, symptom]
-    );
+    const next = logged.includes(symptom)
+      ? logged.filter((s) => s !== symptom)
+      : [...logged, symptom];
+    setLogged(next);
+    writeDecoy({ logged: next, day: new Date().toDateString() });
   }
 
   return (
