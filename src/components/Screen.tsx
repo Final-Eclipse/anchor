@@ -17,6 +17,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { app, radius, space, type } from '../theme';
 import { usePanic } from '../state/VaultState';
 import { isSecureStorage } from '../crypto/keyStore';
@@ -33,21 +34,36 @@ interface Props {
 export function Screen({ title, subtitle, children, scroll = true }: Props) {
   const insets = useSafeAreaInsets();
   const panic = usePanic();
+  const navigation = useNavigation();
+  const canGoBack = navigation.canGoBack();
 
   const header = (
-    <View style={styles.header}>
-      <View style={styles.headerText}>
+    <View style={styles.headerBlock}>
+      {/* Two different exits. Back returns to the previous screen and keeps the
+          vault open; Hide drops the key and returns to the decoy. Keep them
+          visually distinct — confusing them under pressure is a real cost. */}
+      <View style={styles.bar}>
+        {canGoBack ? (
+          <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
+            <Text style={styles.back}>‹ Back</Text>
+          </Pressable>
+        ) : (
+          <View />
+        )}
+        <Pressable
+          onPress={panic}
+          hitSlop={12}
+          accessibilityLabel="Hide this app"
+          style={({ pressed }) => [styles.panic, pressed && styles.panicPressed]}
+        >
+          <Text style={styles.panicText}>Hide</Text>
+        </Pressable>
+      </View>
+
+      <View>
         <Text style={styles.title}>{title}</Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
-      <Pressable
-        onPress={panic}
-        hitSlop={12}
-        accessibilityLabel="Close"
-        style={({ pressed }) => [styles.panic, pressed && styles.panicPressed]}
-      >
-        <Text style={styles.panicText}>Close</Text>
-      </Pressable>
     </View>
   );
 
@@ -78,8 +94,9 @@ export function Screen({ title, subtitle, children, scroll = true }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: app.bg },
   scroll: { padding: space.md, paddingBottom: space.xl, gap: space.md, flexGrow: 1 },
-  header: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
-  headerText: { flex: 1 },
+  headerBlock: { gap: space.md },
+  bar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  back: { ...type.body, color: app.accent },
   title: { ...type.title, color: app.text },
   subtitle: { ...type.body, color: app.subtle, marginTop: space.xs },
   panic: {
@@ -87,7 +104,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     paddingVertical: space.sm,
     paddingHorizontal: space.md,
-    marginTop: space.xs,
   },
   panicPressed: { opacity: 0.6 },
   panicText: { color: app.subtle, ...type.small, fontWeight: '600' },
