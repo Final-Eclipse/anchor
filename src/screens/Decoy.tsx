@@ -56,30 +56,50 @@ function cycleInfo() {
   return { today, started, dayOfCycle, daysUntilNext, week };
 }
 
-/** Symptoms are logged against a date, so they clear naturally on a new day. */
-function loadLogged(): string[] {
+/** Logs are kept against a date, so they clear naturally on a new day. */
+function loadToday(): { logged: string[]; period: boolean } {
   const saved = readDecoy();
   const todayKey = new Date().toDateString();
-  return saved && saved.day === todayKey ? saved.logged : [];
+  return saved && saved.day === todayKey
+    ? { logged: saved.logged, period: saved.period }
+    : { logged: [], period: false };
 }
 
 export function Decoy() {
   const insets = useSafeAreaInsets();
   const [entering, setEntering] = useState(false);
-  const [logged, setLogged] = useState<string[]>(loadLogged);
-  const [periodLogged, setPeriodLogged] = useState(false);
+  const [{ logged, period }, setToday] = useState(loadToday);
 
   if (entering) return <Unlock onCancel={() => setEntering(false)} />;
 
   const { today, started, dayOfCycle, daysUntilNext, week } = cycleInfo();
 
-  function toggle(symptom: string) {
-    const next = logged.includes(symptom)
-      ? logged.filter((s) => s !== symptom)
-      : [...logged, symptom];
-    setLogged(next);
-    writeDecoy({ logged: next, day: new Date().toDateString() });
+  function save(next: { logged: string[]; period: boolean }) {
+    setToday(next);
+    writeDecoy({ ...next, day: new Date().toDateString() });
   }
+
+  function toggle(symptom: string) {
+    save({
+      period,
+      logged: logged.includes(symptom)
+        ? logged.filter((s) => s !== symptom)
+        : [...logged, symptom],
+    });
+  }
+
+  /** Untapping is normal in real trackers — people mis-tap and undo it. */
+  function togglePeriod() {
+    save({ logged, period: !period });
+  }
+
+  const summary = period
+    ? logged.length
+      ? `Period · ${logged.length} symptom${logged.length > 1 ? 's' : ''}`
+      : 'Period'
+    : logged.length
+      ? `${logged.length} symptom${logged.length > 1 ? 's' : ''}`
+      : 'Nothing yet';
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -117,15 +137,15 @@ export function Decoy() {
         </View>
 
         <Pressable
-          onPress={() => setPeriodLogged(!periodLogged)}
+          onPress={togglePeriod}
           style={({ pressed }) => [
             styles.logPeriod,
-            periodLogged && styles.logPeriodOn,
+            period && styles.logPeriodOn,
             pressed && styles.logPressed,
           ]}
         >
-          <Text style={[styles.logPeriodText, periodLogged && styles.logPeriodTextOn]}>
-            {periodLogged ? 'Period logged for today' : 'Log period'}
+          <Text style={[styles.logPeriodText, period && styles.logPeriodTextOn]}>
+            {period ? 'Logged today · tap to undo' : 'Log period'}
           </Text>
         </Pressable>
 
@@ -160,8 +180,8 @@ export function Decoy() {
             <Text style={styles.statValue}>{CYCLE_LENGTH} days</Text>
           </View>
           <View style={[styles.statRow, styles.statRowLast]}>
-            <Text style={styles.statLabel}>Logged days</Text>
-            <Text style={styles.statValue}>{logged.length}</Text>
+            <Text style={styles.statLabel}>Logged today</Text>
+            <Text style={styles.statValue}>{summary}</Text>
           </View>
         </View>
       </ScrollView>

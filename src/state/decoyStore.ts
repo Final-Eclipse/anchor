@@ -18,7 +18,8 @@ const isWeb = Platform.OS === 'web';
 
 export interface DecoyState {
   logged: string[];
-  /** ISO date the symptoms were logged against, so they clear on a new day. */
+  period: boolean;
+  /** Date these were logged against, so they clear on a new day. */
   day: string;
 }
 
