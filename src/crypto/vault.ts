@@ -71,6 +71,37 @@ interface WrappedKeyRecord {
   failures?: number;
   /** Epoch ms before which no attempt is accepted. */
   lockedUntil?: number;
+  /**
+   * The same data key, wrapped a second time under her recovery code. Optional,
+   * because turning it on means having somewhere safe to keep the code, and only
+   * she knows whether she does.
+   */
+  recovery?: { salt: string; wrapped: string; iterations: number };
+}
+
+/**
+ * Unambiguous alphabet: no O/0, no I/1/L. She may be copying this onto paper in
+ * a hurry, or reading it back months later.
+ */
+const CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+const CODE_GROUPS = 3;
+const CODE_GROUP_LENGTH = 4;
+
+/** Strips formatting so "anch or-1234" and "ANCHOR1234" both work. */
+export function normalizeRecoveryCode(input: string): string {
+  return input.toUpperCase().replace(/[^0-9A-Z]/g, '');
+}
+
+/** Twelve characters from a 31-letter alphabet — about 59 bits. */
+export async function generateRecoveryCode(): Promise<string> {
+  const bytes = await getRandomBytesAsync(CODE_GROUPS * CODE_GROUP_LENGTH);
+  const chars = [...bytes].map((b) => CODE_ALPHABET[b % CODE_ALPHABET.length]);
+
+  const groups: string[] = [];
+  for (let i = 0; i < CODE_GROUPS; i++) {
+    groups.push(chars.slice(i * CODE_GROUP_LENGTH, (i + 1) * CODE_GROUP_LENGTH).join(''));
+  }
+  return groups.join('-');
 }
 
 /**
@@ -131,7 +162,14 @@ async function deriveKek(
   return AESEncryptionKey.import(bytes);
 }
 
+/**
+ * Re-wraps the key under a PIN. Preserves any recovery copy: changing the PIN
+ * must not silently invalidate a code she wrote down months ago.
+ */
 async function writeWrappedKey(key: AESEncryptionKey, pin: string): Promise<void> {
+  const existing = await getWrappedKey();
+  const previous: WrappedKeyRecord | null = existing ? JSON.parse(existing) : null;
+
   const salt = await getRandomBytesAsync(SALT_BYTES);
   const sealed = await aesEncryptAsync(await key.bytes(), await deriveKek(pin, salt));
 
@@ -140,6 +178,7 @@ async function writeWrappedKey(key: AESEncryptionKey, pin: string): Promise<void
     salt: toHex(salt),
     wrapped: await sealed.combined('base64'),
     iterations: PBKDF2_ITERATIONS,
+    recovery: previous?.recovery,
   };
   await setWrappedKey(JSON.stringify(record));
 }
@@ -211,6 +250,79 @@ export async function unlockVault(pin: string): Promise<UnlockResult> {
 
   if (wait) return { ok: false, reason: 'locked', retryInMs: wait };
   return { ok: false, reason: 'wrong', attemptsBeforeWait: 4 - failures };
+}
+
+// ────────────────────────────────────────────────────────────── recovery
+
+/**
+ * Wraps the data key a second time under her recovery code, so either the code
+ * or the PIN opens the vault. Requires the vault to be unlocked, because we need
+ * the key itself — there is no way to enable this from a locked state, which is
+ * the point.
+ */
+export async function enableRecovery(code: string): Promise<void> {
+  const key = requireKey();
+  const stored = await getWrappedKey();
+  if (!stored) throw new Error('No vault to attach recovery to');
+
+  const record: WrappedKeyRecord = JSON.parse(stored);
+  const salt = await getRandomBytesAsync(SALT_BYTES);
+  const kek = await deriveKek(normalizeRecoveryCode(code), salt);
+  const sealed = await aesEncryptAsync(await key.bytes(), kek);
+
+  await setWrappedKey(
+    JSON.stringify({
+      ...record,
+      recovery: {
+        salt: toHex(salt),
+        wrapped: await sealed.combined('base64'),
+        iterations: PBKDF2_ITERATIONS,
+      },
+    } satisfies WrappedKeyRecord)
+  );
+}
+
+export async function hasRecovery(): Promise<boolean> {
+  const stored = await getWrappedKey();
+  if (!stored) return false;
+  return !!(JSON.parse(stored) as WrappedKeyRecord).recovery;
+}
+
+/**
+ * Opens the vault with the recovery code instead of the PIN. Deliberately not
+ * subject to the wrong-code lockout: someone typing a twelve-character code is
+ * not guessing it, and locking her out of her own escape hatch would be cruel.
+ * The code's own length is what makes brute force hopeless.
+ *
+ * She should be sent straight to setting a new PIN afterwards.
+ */
+export async function unlockWithRecovery(code: string): Promise<boolean> {
+  const stored = await getWrappedKey();
+  if (!stored) return false;
+
+  const record: WrappedKeyRecord = JSON.parse(stored);
+  if (!record.recovery) return false;
+
+  try {
+    const kek = await deriveKek(
+      normalizeRecoveryCode(code),
+      fromHex(record.recovery.salt),
+      record.recovery.iterations
+    );
+    const sealed = AESSealedData.fromCombined(record.recovery.wrapped);
+    const keyBytes = await aesDecryptAsync(sealed, kek, { output: 'bytes' });
+    dataKey = await AESEncryptionKey.import(keyBytes);
+    return true;
+  } catch {
+    dataKey = null;
+    return false;
+  }
+}
+
+/** Sets a new PIN for an already-unlocked vault, clearing any lockout. */
+export async function setNewPin(pin: string): Promise<void> {
+  const key = requireKey();
+  await writeWrappedKey(key, pin);
 }
 
 /** Call on panic exit, and on every AppState change out of 'active'. */

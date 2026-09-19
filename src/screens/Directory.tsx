@@ -15,7 +15,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
 import { ResourceCard } from '../components/ResourceCard';
-import { app, radius, space, type } from '../theme';
+import { app, space, type } from '../theme';
 import { RESOURCES } from '../data/resources';
 import type { NeedCategory } from '../data/types';
 import type { ScreenProps } from '../navigation/types';

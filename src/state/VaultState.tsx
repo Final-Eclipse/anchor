@@ -17,6 +17,10 @@ import {
   unlockVault,
   lockVault,
   destroyVault,
+  enableRecovery,
+  unlockWithRecovery,
+  setNewPin,
+  hasRecovery,
   type UnlockResult,
 } from '../crypto/vault';
 
@@ -38,6 +42,23 @@ interface VaultState {
    * code that no longer exists, which reads to the user as "wrong code".
    */
   destroy: () => Promise<void>;
+  /** Attaches a recovery code to an unlocked vault. */
+  attachRecovery: (code: string) => Promise<void>;
+  /** Opens with the recovery code. She should set a new PIN straight after. */
+  recoverWith: (code: string) => Promise<boolean>;
+  /** Replaces the PIN on an unlocked vault, keeping the recovery code valid. */
+  replacePin: (pin: string) => Promise<void>;
+  /** Whether a recovery code was ever set up. */
+  recoveryAvailable: boolean;
+  /** True from creating the vault until the recovery offer is answered. */
+  justCreated: boolean;
+  dismissRecoveryOffer: () => void;
+  /**
+   * True after a recovery unlock, until she sets a new PIN. The vault is open but
+   * the only PIN that works is the one she just told us she doesn't have, so the
+   * app must not let her past this.
+   */
+  needsNewPin: boolean;
 }
 
 const Ctx = createContext<VaultState | null>(null);
@@ -45,12 +66,16 @@ const Ctx = createContext<VaultState | null>(null);
 export function VaultProvider({ children }: { children: ReactNode }) {
   const [hasVault, setHasVault] = useState<boolean | null>(null);
   const [unlocked, setUnlocked] = useState(false);
+  const [recoveryAvailable, setRecoveryAvailable] = useState(false);
+  const [justCreated, setJustCreated] = useState(false);
+  const [needsNewPin, setNeedsNewPin] = useState(false);
 
   useEffect(() => {
     // If the check fails we treat it as "no vault" rather than leaving hasVault
     // null forever — that state silently shows the wrong prompt and strands her
     // on a screen with no way forward.
     isVaultSetUp().then(setHasVault, () => setHasVault(false));
+    hasRecovery().then(setRecoveryAvailable, () => setRecoveryAvailable(false));
   }, []);
 
   useEffect(() => {
@@ -75,6 +100,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       await setupVault(pin);
       setHasVault(true);
       setUnlocked(true);
+      setJustCreated(true);
     },
     panic() {
       lockVault();
@@ -84,7 +110,27 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       await destroyVault();
       setHasVault(false);
       setUnlocked(false);
+      setRecoveryAvailable(false);
+      setJustCreated(false);
     },
+    async attachRecovery(code) {
+      await enableRecovery(code);
+      setRecoveryAvailable(true);
+    },
+    async recoverWith(code) {
+      const ok = await unlockWithRecovery(code);
+      setUnlocked(ok);
+      if (ok) setNeedsNewPin(true);
+      return ok;
+    },
+    async replacePin(pin) {
+      await setNewPin(pin);
+      setNeedsNewPin(false);
+    },
+    recoveryAvailable,
+    justCreated,
+    dismissRecoveryOffer: () => setJustCreated(false),
+    needsNewPin,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -17,6 +17,8 @@ import { app } from '../theme';
 import type { AppStackParamList } from './types';
 
 import { Decoy } from '../screens/Decoy';
+import { RecoveryCode } from '../screens/RecoveryCode';
+import { SetNewPin } from '../screens/SetNewPin';
 import Home from '../screens/Home';
 import Assessment from '../screens/Assessment';
 import Path from '../screens/Path';
@@ -36,9 +38,19 @@ const theme = {
 };
 
 export function RootNavigator() {
-  const { unlocked } = useVault();
+  const { unlocked, justCreated, dismissRecoveryOffer, needsNewPin } = useVault();
 
   if (!unlocked) return <Decoy />;
+
+  // Offered once, immediately after she first sets a code — the only moment the
+  // vault is open and she hasn't yet had to remember anything. It lives here
+  // rather than inside Unlock because creating the vault unlocks it, which
+  // unmounts Unlock along with the whole locked tree.
+  if (justCreated) return <RecoveryCode onDone={dismissRecoveryOffer} />;
+
+  // She got in with the recovery code, so no PIN she knows opens this yet.
+  // Setting one is mandatory — otherwise the next lock strands her again.
+  if (needsNewPin) return <SetNewPin />;
 
   return (
     <NavigationContainer theme={theme}>
