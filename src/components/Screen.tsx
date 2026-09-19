@@ -17,7 +17,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useNavigationState } from '@react-navigation/native';
 import { app, radius, space, type } from '../theme';
 import { usePanic } from '../state/VaultState';
 import { isSecureStorage } from '../crypto/keyStore';
@@ -35,7 +35,14 @@ export function Screen({ title, subtitle, children, scroll = true }: Props) {
   const insets = useSafeAreaInsets();
   const panic = usePanic();
   const navigation = useNavigation();
-  const canGoBack = navigation.canGoBack();
+
+  /**
+   * Reactive, unlike navigation.canGoBack(), which is read once during render.
+   * Screens stay mounted, so a screen that was pushed on top of something else
+   * kept showing Back after it became the root again — and pressing it threw
+   * "GO_BACK was not handled by any navigator".
+   */
+  const canGoBack = useNavigationState((state) => state.index > 0);
 
   const header = (
     <View style={styles.headerBlock}>
@@ -44,7 +51,13 @@ export function Screen({ title, subtitle, children, scroll = true }: Props) {
           visually distinct — confusing them under pressure is a real cost. */}
       <View style={styles.bar}>
         {canGoBack ? (
-          <Pressable onPress={() => navigation.goBack()} hitSlop={12}>
+          <Pressable
+            onPress={() => {
+              // Belt and braces: never dispatch GO_BACK with nothing beneath.
+              if (navigation.canGoBack()) navigation.goBack();
+            }}
+            hitSlop={12}
+          >
             <Text style={styles.back}>‹ Back</Text>
           </Pressable>
         ) : (
