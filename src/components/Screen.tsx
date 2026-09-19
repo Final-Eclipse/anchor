@@ -21,9 +21,13 @@ import { useNavigation, useNavigationState } from '@react-navigation/native';
 import { app, radius, space, type } from '../theme';
 import { usePanic } from '../state/VaultState';
 import { isSecureStorage } from '../crypto/keyStore';
+import { useAppData } from '../state/AppData';
+import { unreadCount } from '../data/messages';
 
 interface Props {
   title: string;
+  /** Hide the inbox link on the inbox itself. */
+  hideInbox?: boolean;
   /** Optional line under the title. */
   subtitle?: string;
   children: ReactNode;
@@ -31,7 +35,10 @@ interface Props {
   scroll?: boolean;
 }
 
-export function Screen({ title, subtitle, children, scroll = true }: Props) {
+export function Screen({ title, subtitle, children, scroll = true, hideInbox = false }: Props) {
+  const { data } = useAppData();
+  const unread = unreadCount(data);
+  const showInbox = !hideInbox;
   const insets = useSafeAreaInsets();
   const panic = usePanic();
   const navigation = useNavigation();
@@ -50,19 +57,37 @@ export function Screen({ title, subtitle, children, scroll = true }: Props) {
           vault open; Hide drops the key and returns to the decoy. Keep them
           visually distinct — confusing them under pressure is a real cost. */}
       <View style={styles.bar}>
-        {canGoBack ? (
-          <Pressable
-            onPress={() => {
-              // Belt and braces: never dispatch GO_BACK with nothing beneath.
-              if (navigation.canGoBack()) navigation.goBack();
-            }}
-            hitSlop={12}
-          >
-            <Text style={styles.back}>‹ Back</Text>
-          </Pressable>
-        ) : (
-          <View />
-        )}
+        <View style={styles.barLeft}>
+          {canGoBack ? (
+            <Pressable
+              onPress={() => {
+                // Belt and braces: never dispatch GO_BACK with nothing beneath.
+                if (navigation.canGoBack()) navigation.goBack();
+              }}
+              hitSlop={12}
+            >
+              <Text style={styles.back}>‹ Back</Text>
+            </Pressable>
+          ) : null}
+
+          {/* The inbox lives here because the app sends no notifications — this
+              badge is the only way she ever learns there's something to read. */}
+          {showInbox ? (
+            <Pressable
+              onPress={() => navigation.navigate('Inbox' as never)}
+              hitSlop={12}
+              accessibilityLabel={unread > 0 ? `Messages, ${unread} unread` : 'Messages'}
+              style={styles.inbox}
+            >
+              <Text style={styles.inboxText}>Messages</Text>
+              {unread > 0 ? (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unread}</Text>
+                </View>
+              ) : null}
+            </Pressable>
+          ) : null}
+        </View>
         {/* Sized to be hit in a hurry without looking. The generous hitSlop
             matters more than the visible box — she may be reaching for this
             because someone just walked in. */}
@@ -112,6 +137,19 @@ const styles = StyleSheet.create({
   scroll: { padding: space.md, paddingBottom: space.xl, gap: space.md, flexGrow: 1 },
   headerBlock: { gap: space.md },
   bar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  barLeft: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  inbox: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  inboxText: { ...type.small, color: app.subtle, fontWeight: '600' },
+  badge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 5,
+    backgroundColor: app.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: { color: app.bg, fontSize: 11, fontWeight: '700' },
   back: { ...type.body, color: app.accent },
   title: { ...type.title, color: app.text },
   subtitle: { ...type.body, color: app.subtle, marginTop: space.xs },

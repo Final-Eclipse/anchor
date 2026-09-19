@@ -25,6 +25,7 @@ import Fund from '../screens/Fund';
 import Vault from '../screens/Vault';
 import AccountGuide from '../screens/AccountGuide';
 import TrustedHelp from '../screens/TrustedHelp';
+import Inbox from '../screens/Inbox';
 import SetupCheck from '../screens/SetupCheck';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -50,6 +51,7 @@ export function RootNavigator() {
         <Stack.Screen name="Vault" component={Vault} />
         <Stack.Screen name="AccountGuide" component={AccountGuide} />
         <Stack.Screen name="TrustedHelp" component={TrustedHelp} />
+        <Stack.Screen name="Inbox" component={Inbox} />
         <Stack.Screen name="SetupCheck" component={SetupCheck} />
       </Stack.Navigator>
     </NavigationContainer>

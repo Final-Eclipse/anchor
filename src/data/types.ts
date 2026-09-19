@@ -47,7 +47,10 @@ export interface AssessmentResult {
  * trace, so both must go through the exit interstitial — never link directly.
  */
 export type PathAction =
-  | { kind: 'screen'; screen: 'Vault' | 'Fund' | 'Directory' | 'AccountGuide' }
+  | {
+      kind: 'screen';
+      screen: 'Vault' | 'Fund' | 'Directory' | 'AccountGuide' | 'TrustedHelp' | 'Assessment' | 'Path';
+    }
   | { kind: 'directory'; filter: NeedCategory }
   | { kind: 'external'; url: string }
   | { kind: 'call'; number: string };
@@ -121,6 +124,23 @@ export interface FundState {
   needs?: Record<string, number>;
 }
 
+// ─────────────────────────────────────────────────────────────── inbox
+
+/**
+ * A message the app wrote to her, on this phone. Nothing arrives from outside —
+ * there is no server. The inbox exists so the app has somewhere to say things
+ * that a normal app would push to a lock screen anyone can read.
+ */
+export interface InboxMessage {
+  /** Fixed per rule (see data/messages.ts) so a message is written only once. */
+  id: string;
+  title: string;
+  body: string;
+  at: number;
+  read: boolean;
+  action?: PathAction;
+}
+
 // ─────────────────────────────────────────────────────────────── vault
 
 export interface VaultDocMeta {
@@ -140,10 +160,12 @@ export interface AnchorState {
   docs: VaultDocMeta[];
   /** Step ids she has checked off, per path. */
   completedSteps: string[];
+  inbox: InboxMessage[];
 }
 
 export const EMPTY_STATE: AnchorState = {
   fund: { goalCents: 0, entries: [] },
   docs: [],
   completedSteps: [],
+  inbox: [],
 };

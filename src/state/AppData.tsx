@@ -26,6 +26,7 @@ import {
   type ReactNode,
 } from 'react';
 import { EMPTY_STATE, type AnchorState } from '../data/types';
+import { pendingMessages } from '../data/messages';
 import { decryptJson, encryptJson, isUnlocked } from '../crypto/vault';
 import { readRecord, writeRecord } from '../crypto/recordStore';
 import { useVault } from './VaultState';
@@ -100,6 +101,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     commit(next);
     await writeRecord(await encryptJson(next));
   }, []);
+
+  /**
+   * Writes any messages her current state has earned. Settles in one extra pass:
+   * pendingMessages only returns ids the inbox doesn't already hold, so the
+   * update that appends them makes the next run return nothing.
+   */
+  useEffect(() => {
+    if (!unlocked || loading) return;
+    const pending = pendingMessages(data);
+    if (pending.length === 0) return;
+    update((d) => ({ inbox: [...(d.inbox ?? []), ...pending] }));
+  }, [unlocked, loading, data, update]);
 
   return <Ctx.Provider value={{ data, loading, update }}>{children}</Ctx.Provider>;
 }
