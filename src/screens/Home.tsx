@@ -20,6 +20,7 @@ const ELSEWHERE: Array<{ route: keyof AppStackParamList; label: string; hint: st
   { route: 'Fund', label: 'Set aside', hint: 'Amounts and dates only' },
   { route: 'Vault', label: 'Documents', hint: 'Encrypted on this phone' },
   { route: 'AccountGuide', label: 'An account of your own', hint: 'How to open one that stays yours' },
+  { route: 'TrustedHelp', label: 'Help from someone you trust', hint: 'Which ways leave a record' },
   { route: 'SetupCheck', label: 'Setup check', hint: 'Dev only — remove before judging' },
 ];
 

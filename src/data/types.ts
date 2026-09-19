@@ -114,6 +114,11 @@ export interface FundEntry {
 export interface FundState {
   goalCents: number;
   entries: FundEntry[];
+  /**
+   * Her own estimates of what leaving costs, keyed by Need id (src/data/needs.ts).
+   * The goal is the sum of these — knowing the number is the point, not the tally.
+   */
+  needs?: Record<string, number>;
 }
 
 // ─────────────────────────────────────────────────────────────── vault

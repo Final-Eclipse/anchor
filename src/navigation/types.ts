@@ -17,6 +17,7 @@ export type AppStackParamList = {
   Fund: undefined;
   Vault: undefined;
   AccountGuide: undefined;
+  TrustedHelp: undefined;
   SetupCheck: undefined;
 };
 
