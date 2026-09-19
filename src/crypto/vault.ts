@@ -35,16 +35,17 @@ const SALT_BYTES = 16;
 
 /**
  * PBKDF2 here is pure JS and runs far slower in Hermes than on a laptop.
- * 100,000 measured over a second on an iPhone, which is too slow for an app
- * someone may open under pressure, so it came down to 30,000.
+ * Measured on an iPhone: 100,000 took well over a second, and 30,000 landed at
+ * almost exactly one second — still too slow for an app someone may be opening
+ * with very little time. 18,000 puts it near half a second.
  *
- * That trade is smaller than it looks. This work exists to make guessing the PIN
- * expensive, but a 4-digit PIN has only 10,000 possibilities — the PIN length is
- * the real limit, not the iteration count. Moving to a 6-digit PIN buys 100x more
- * than any iteration count we could afford here, and costs nothing. Do that when
- * you build the real unlock screen.
+ * The trade is smaller than it looks. This work makes guessing the code
+ * expensive, but the code's length is the real limit: six digits is a million
+ * possibilities and four is ten thousand, which dwarfs any iteration count we
+ * could afford on a phone. Six digits plus the lockout below is where the
+ * protection actually comes from.
  */
-const PBKDF2_ITERATIONS = 30_000;
+const PBKDF2_ITERATIONS = 18_000;
 
 interface WrappedKeyRecord {
   v: 1;

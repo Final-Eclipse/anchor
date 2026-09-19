@@ -30,6 +30,14 @@ const CYCLE_LENGTH = 28;
 const SYMPTOMS = ['Cramps', 'Headache', 'Tired', 'Mood', 'Bloating'];
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
+/** Every real tracker leads with the phase, so this one does too. */
+function phaseFor(day: number): { name: string; blurb: string } {
+  if (day <= 5) return { name: 'Period', blurb: 'Rest if you can.' };
+  if (day <= 12) return { name: 'Follicular phase', blurb: 'Energy usually climbs now.' };
+  if (day <= 15) return { name: 'Ovulation', blurb: 'Most fertile days of your cycle.' };
+  return { name: 'Luteal phase', blurb: 'Symptoms often show up late in this phase.' };
+}
+
 /** Dates derive from today so the app never looks abandoned. */
 function cycleInfo() {
   const today = new Date();
@@ -59,6 +67,7 @@ export function Decoy() {
   const insets = useSafeAreaInsets();
   const [entering, setEntering] = useState(false);
   const [logged, setLogged] = useState<string[]>(loadLogged);
+  const [periodLogged, setPeriodLogged] = useState(false);
 
   if (entering) return <Unlock onCancel={() => setEntering(false)} />;
 
@@ -101,9 +110,24 @@ export function Decoy() {
           </View>
         </Pressable>
 
-        <Text style={styles.prediction}>
-          Next period in {daysUntilNext} days
-        </Text>
+        <View style={styles.phaseBlock}>
+          <Text style={styles.phaseName}>{phaseFor(dayOfCycle).name}</Text>
+          <Text style={styles.phaseBlurb}>{phaseFor(dayOfCycle).blurb}</Text>
+          <Text style={styles.prediction}>Next period in {daysUntilNext} days</Text>
+        </View>
+
+        <Pressable
+          onPress={() => setPeriodLogged(!periodLogged)}
+          style={({ pressed }) => [
+            styles.logPeriod,
+            periodLogged && styles.logPeriodOn,
+            pressed && styles.logPressed,
+          ]}
+        >
+          <Text style={[styles.logPeriodText, periodLogged && styles.logPeriodTextOn]}>
+            {periodLogged ? 'Period logged for today' : 'Log period'}
+          </Text>
+        </Pressable>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>How are you feeling?</Text>
@@ -180,7 +204,21 @@ const styles = StyleSheet.create({
   ringNumber: { fontSize: 64, fontWeight: '300', color: decoy.accent, lineHeight: 70 },
   ringSub: { ...type.small, color: decoy.subtle },
 
-  prediction: { ...type.body, color: decoy.text, textAlign: 'center' },
+  phaseBlock: { alignItems: 'center', gap: 2 },
+  phaseName: { ...type.heading, color: decoy.text },
+  phaseBlurb: { ...type.small, color: decoy.subtle },
+  prediction: { ...type.body, color: decoy.text, textAlign: 'center', marginTop: space.xs },
+
+  logPeriod: {
+    borderRadius: 999,
+    paddingVertical: space.md,
+    alignItems: 'center',
+    backgroundColor: decoy.accent,
+  },
+  logPeriodOn: { backgroundColor: decoy.accentSoft },
+  logPressed: { opacity: 0.8 },
+  logPeriodText: { ...type.body, color: '#ffffff', fontWeight: '700' },
+  logPeriodTextOn: { color: decoy.accent },
 
   card: {
     backgroundColor: decoy.surface,

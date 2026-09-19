@@ -50,9 +50,12 @@ export function Screen({ title, subtitle, children, scroll = true }: Props) {
         ) : (
           <View />
         )}
+        {/* Sized to be hit in a hurry without looking. The generous hitSlop
+            matters more than the visible box — she may be reaching for this
+            because someone just walked in. */}
         <Pressable
           onPress={panic}
-          hitSlop={12}
+          hitSlop={{ top: 16, bottom: 16, left: 24, right: 24 }}
           accessibilityLabel="Hide this app"
           style={({ pressed }) => [styles.panic, pressed && styles.panicPressed]}
         >
@@ -101,12 +104,14 @@ const styles = StyleSheet.create({
   subtitle: { ...type.body, color: app.subtle, marginTop: space.xs },
   panic: {
     backgroundColor: app.surfaceLift,
-    borderRadius: radius.sm,
-    paddingVertical: space.sm,
-    paddingHorizontal: space.md,
+    borderRadius: radius.md,
+    paddingVertical: space.md,
+    paddingHorizontal: space.lg,
+    borderWidth: 1,
+    borderColor: app.line,
   },
-  panicPressed: { opacity: 0.6 },
-  panicText: { color: app.subtle, ...type.small, fontWeight: '600' },
+  panicPressed: { opacity: 0.6, backgroundColor: app.line },
+  panicText: { color: app.text, ...type.body, fontWeight: '700' },
   insecure: {
     ...type.small,
     color: app.gold,

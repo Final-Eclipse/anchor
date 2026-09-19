@@ -71,7 +71,7 @@ export default function SetupCheck() {
   async function run() {
     if (await isVaultSetUp()) {
       setBlocked(
-        'A vault already exists on this phone. This test would destroy it, so it will not run. Delete the app and reinstall if you need to re-check a clean setup.'
+        "You've already set up a code on this phone. These tests create and delete a code of their own, so they'd wipe your data — they won't run while it's here. Use Start over below first if you want to test from scratch."
       );
       return;
     }
@@ -138,7 +138,15 @@ export default function SetupCheck() {
   const failed = lines.filter((l) => !l.ok).length;
 
   return (
-    <Screen title="Setup check" subtitle="Runs the real crypto on this device.">
+    <Screen title="Setup check" subtitle="For us, not for her. Delete this screen before judging.">
+      <Text style={styles.explainer}>
+        Two tools for building. <Text style={styles.strong}>Run checks</Text> proves the
+        encryption works on this phone and times how long unlocking takes.{' '}
+        <Text style={styles.strong}>Start over</Text> wipes everything so you can see the
+        first-run screens again — there's no other way back to them, because the code you set
+        survives reloading the app.
+      </Text>
+
       <Pressable
         style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
         onPress={run}
@@ -171,8 +179,9 @@ export default function SetupCheck() {
 
       <View style={styles.resetBlock}>
         <Text style={styles.resetHint}>
-          Testing the first-run flow? This is the only way back to it on a phone — Expo Go
-          keeps the code between reloads.
+          Deletes your code, everything saved, and every document on this phone, so the next
+          time you long-press the day ring you'll get the safety notice and set a new code —
+          exactly what she'd see opening it for the first time.
         </Text>
         <Pressable
           onPress={confirmReset}
@@ -194,6 +203,8 @@ const styles = StyleSheet.create({
   },
   buttonPressed: { opacity: 0.7 },
   buttonText: { color: app.bg, ...type.body, fontWeight: '700' },
+  explainer: { ...type.small, color: app.subtle, lineHeight: 19 },
+  strong: { color: app.text, fontWeight: '700' },
   blocked: {
     ...type.small,
     color: app.gold,

@@ -94,14 +94,14 @@ export const RESOURCES: Resource[] = [
   {
     id: 'united-way-211',
     name: 'Georgia 211',
-    categories: ['emergency-cash', 'housing'],
+    categories: ['emergency-cash', 'housing', 'job-training'],
     area: 'georgia',
     description:
-      'Dial 211 to be referred to help with rent, utilities, food and emergency assistance funds near you.',
+      'Free and confidential. Trained specialists connect you to help with rent, utilities, food, healthcare and work.',
     phone: '211',
     url: 'https://211online.unitedwayatlanta.org/',
-    note: 'Free referral line',
-    verified: false,
+    note: 'Or text your ZIP code and what you need to 898211',
+    verified: true,
   },
 ];
 
