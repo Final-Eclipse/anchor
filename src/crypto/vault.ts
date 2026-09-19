@@ -165,6 +165,22 @@ export async function decryptBytes(blob: string): Promise<Uint8Array> {
   return aesDecryptAsync(sealed, requireKey(), { output: 'bytes' });
 }
 
+/**
+ * For payloads that are already base64 — an image straight from the picker, say.
+ * Avoids decoding to bytes and re-encoding for no reason; expo-crypto takes
+ * base64 directly.
+ */
+export async function encryptBase64(plainBase64: string): Promise<string> {
+  const sealed = await aesEncryptAsync(plainBase64, requireKey());
+  return sealed.combined('base64');
+}
+
+/** Returns base64, ready to drop into a data: URI. */
+export async function decryptToBase64(blob: string): Promise<string> {
+  const sealed = AESSealedData.fromCombined(blob);
+  return aesDecryptAsync(sealed, requireKey(), { output: 'base64' });
+}
+
 export async function encryptJson(value: unknown): Promise<string> {
   return encryptBytes(new TextEncoder().encode(JSON.stringify(value)));
 }
