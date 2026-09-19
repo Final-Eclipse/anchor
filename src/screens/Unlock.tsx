@@ -1,13 +1,13 @@
 /**
  * PIN entry. Lane A owns this file.
  *
- * Handles both first run (choose a PIN, confirm it) and every run after
- * (enter it). Six digits, not four — see the note in vault.ts about why the PIN
- * length matters far more than the work factor.
+ * Handles both first run (the safety notice, then choose a PIN and confirm it)
+ * and every run after (enter it). Six digits, not four — see the note in
+ * vault.ts about why PIN length matters far more than the work factor.
  *
- * TODO (Lane A): the honest safety notice belongs on first run — that a phone
- * someone else monitors can't be made safe by an app, and a library computer is
- * better. Say it before she commits anything to this.
+ * The notice comes before anything else on first run, and it says what the app
+ * can't do as plainly as what it can. An app in this position that oversells its
+ * protection is worse than no app, because she'd act on the difference.
  */
 
 import { useState } from 'react';
@@ -15,6 +15,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { app, radius, space, type } from '../theme';
 import { useVault } from '../state/VaultState';
+import { SafetyNotice } from './SafetyNotice';
 
 const PIN_LENGTH = 6;
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
@@ -25,6 +26,7 @@ export function Unlock({ onCancel }: { onCancel: () => void }) {
   const [firstEntry, setFirstEntry] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [noticeSeen, setNoticeSeen] = useState(false);
 
   const creating = hasVault === false;
   const confirming = creating && firstEntry !== null;
@@ -70,6 +72,11 @@ export function Unlock({ onCancel }: { onCancel: () => void }) {
   }
 
   const insets = useSafeAreaInsets();
+
+  // First run: say what this can and can't do before she commits anything to it.
+  if (creating && !noticeSeen) {
+    return <SafetyNotice onContinue={() => setNoticeSeen(true)} onCancel={onCancel} />;
+  }
 
   const prompt = hasVault === null
     ? ' '
