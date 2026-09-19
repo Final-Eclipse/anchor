@@ -1,57 +1,117 @@
 /**
- * ─── LANE B1 ─────────────────────────────────────────────────────────────────
- * The intake. Delete this placeholder and build it.
+ * The intake. One question at a time, all of them skippable.
  *
- * What it does:
- *   1. Show one question at a time from QUESTIONS (src/data/questions.ts).
- *   2. Collect answers as { [question.id]: option.value }.
- *   3. When she finishes — or taps Skip to the end — call
- *      scoreAssessment(answers, QUESTIONS), save it, and go to 'Path':
+ * She may have very little private time, so nothing here traps her: every
+ * question can be passed, she can stop at any point, and a partial set of
+ * answers still routes somewhere useful because unanswered questions simply
+ * carry no weight.
  *
- *        const { update } = useAppData();
- *        const result = scoreAssessment(answers, QUESTIONS);
- *        await update({ assessment: result });
- *        navigation.navigate('Path', { pathId: result.pathId });
- *
- *      `update` encrypts and saves for you. Don't touch the filesystem directly.
- *
- * Rules that matter here:
- *   · Every question must be skippable. She may have very little private time,
- *     and a half-finished intake still routes somewhere useful.
- *   · Show question.help under the prompt when it exists. Assume no finance
- *     vocabulary at all.
- *   · Never show a score, a diagnosis, or a "you are being abused" conclusion.
- *     She reports, the app responds. That's the whole relationship.
- *
- * Wiring the result up to storage is Lane A's job — get the flow working first
- * and hand the AssessmentResult over when it runs end to end.
- * ─────────────────────────────────────────────────────────────────────────────
+ * It never tells her she is being abused. It takes what she reports and offers
+ * the plan that tends to help people in that situation. That distinction is the
+ * whole relationship between her and this app, and it's easy to break by adding
+ * a "your score" screen. Don't.
  */
 
-import { StyleSheet, Text } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
-import { app, space, type } from '../theme';
+import { app, radius, space, type } from '../theme';
 import { QUESTIONS } from '../data/questions';
+import { scoreAssessment } from '../data/scoring';
+import { useAppData } from '../state/AppData';
 import type { ScreenProps } from '../navigation/types';
 
 export default function Assessment({ navigation }: ScreenProps<'Assessment'>) {
+  const { update } = useAppData();
+  const [index, setIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+
+  const question = QUESTIONS[index];
+  const isLast = index === QUESTIONS.length - 1;
+
+  async function finish(finalAnswers: Record<string, string>) {
+    setSaving(true);
+    const result = scoreAssessment(finalAnswers, QUESTIONS);
+    await update({ assessment: result });
+    navigation.replace('Path', { pathId: result.pathId });
+  }
+
+  async function choose(value: string) {
+    const next = { ...answers, [question.id]: value };
+    setAnswers(next);
+    if (isLast) await finish(next);
+    else setIndex(index + 1);
+  }
+
+  async function skip() {
+    if (isLast) await finish(answers);
+    else setIndex(index + 1);
+  }
+
   return (
-    <Screen title="Where things stand" subtitle="You can skip anything, and stop whenever.">
-      <Text style={styles.todo}>
-        Lane B1 builds this. {QUESTIONS.length} questions are written and waiting in
-        src/data/questions.ts — read the comment at the top of this file for what to do
-        with them.
-      </Text>
+    <Screen title="Where things stand" subtitle="Nothing here leaves this phone.">
+      <View style={styles.progressRow}>
+        {QUESTIONS.map((q, i) => (
+          <View
+            key={q.id}
+            style={[
+              styles.tick,
+              i < index && styles.tickDone,
+              i === index && styles.tickCurrent,
+            ]}
+          />
+        ))}
+      </View>
+
+      <Text style={styles.prompt}>{question.prompt}</Text>
+      {question.help ? <Text style={styles.help}>{question.help}</Text> : null}
+
+      <View style={styles.options}>
+        {question.options.map((option) => (
+          <Pressable
+            key={option.value}
+            disabled={saving}
+            onPress={() => choose(option.value)}
+            style={({ pressed }) => [styles.option, pressed && styles.pressed]}
+          >
+            <Text style={styles.optionText}>{option.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <Pressable disabled={saving} onPress={skip} style={styles.skip}>
+        <Text style={styles.skipText}>
+          {isLast ? 'Skip this and finish' : 'Skip this question'}
+        </Text>
+      </Pressable>
+
+      {index > 0 ? (
+        <Pressable disabled={saving} onPress={() => setIndex(index - 1)} style={styles.skip}>
+          <Text style={styles.skipText}>Go back a question</Text>
+        </Pressable>
+      ) : null}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  todo: {
-    ...type.body,
-    color: app.subtle,
+  progressRow: { flexDirection: 'row', gap: space.xs },
+  tick: { flex: 1, height: 3, borderRadius: 2, backgroundColor: app.line },
+  tickDone: { backgroundColor: app.accent },
+  tickCurrent: { backgroundColor: app.text },
+  prompt: { ...type.heading, color: app.text, marginTop: space.sm },
+  help: { ...type.body, color: app.subtle },
+  options: { gap: space.sm, marginTop: space.sm },
+  option: {
     backgroundColor: app.surface,
+    borderRadius: radius.md,
     padding: space.md,
-    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: app.line,
   },
+  pressed: { backgroundColor: app.surfaceLift },
+  optionText: { ...type.body, color: app.text, fontWeight: '600' },
+  skip: { paddingVertical: space.sm, alignItems: 'center' },
+  skipText: { ...type.small, color: app.subtle },
 });

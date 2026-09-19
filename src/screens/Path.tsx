@@ -1,59 +1,154 @@
 /**
- * ─── LANE B1 ─────────────────────────────────────────────────────────────────
- * Her plan. Delete this placeholder and build it.
+ * Her plan: an ordered checklist built from her answers.
  *
- * What it does:
- *   1. Take a pathId (from route params, or the stored assessment result) and
- *      look it up in PATHS (src/data/paths.ts).
- *   2. Show path.premise, then path.steps as a checklist she can tick off.
- *   3. Hide any step whose `requires` isn't in her modifiers — that's how the
- *      children overlay works. One flag, applied to all three paths.
- *   4. Tapping a step follows step.action:
- *        screen    -> navigation.navigate(action.screen)
- *        directory -> navigation.navigate('Directory', { filter: action.filter })
- *        call      -> confirmExit({ kind: 'call', number: action.number })
- *        external  -> confirmExit({ kind: 'external', url: action.url })
+ * A path creates almost no new surface of its own — each step points at
+ * something that already exists. That's the only reason three complete paths
+ * are affordable, and it's why this screen is mostly routing.
  *
- *      via `const confirmExit = useExitWarning()`. Never call Linking directly.
+ * Steps marked `requires` only appear when she has that overlay, which is how
+ * the children modifier works: one flag, applied across all three paths.
  *
- * The interstitial is not optional. A call lands in her recent calls and a link
- * lands in browser history, and the app can warn her but can't clean up after
- * her. Warning her first is the single most convincing detail in this project —
- * it proves we thought past our own app's edge.
- * ─────────────────────────────────────────────────────────────────────────────
+ * Calls and links go through the exit interstitial, never straight to Linking.
+ * A call lands in her recent calls and a link lands in browser history, and
+ * this app cannot clean up after either — so it warns her first, every time.
  */
 
-import { StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../components/Screen';
-import { app, space, type } from '../theme';
+import { app, radius, space, type } from '../theme';
 import { PATHS } from '../data/paths';
 import { useAppData } from '../state/AppData';
+import { useExitWarning } from '../components/ExitWarning';
+import type { PathStep } from '../data/types';
 import type { ScreenProps } from '../navigation/types';
 
-export default function Path({ route }: ScreenProps<'Path'>) {
-  const { data } = useAppData();
-  // Route param wins (she just finished the intake); otherwise fall back to the
-  // saved result, so returning to this screen later still shows her plan.
-  const pathId = route.params?.pathId ?? data.assessment?.pathId ?? 'no-money-of-her-own';
-  const path = PATHS[pathId];
+export default function Path({ route, navigation }: ScreenProps<'Path'>) {
+  const { data, update } = useAppData();
+  const confirmExit = useExitWarning();
+
+  // The route param wins when she has just finished the intake; otherwise fall
+  // back to what's saved, so returning here later still shows her plan.
+  const pathId = route.params?.pathId ?? data.assessment?.pathId;
+  const path = pathId ? PATHS[pathId] : undefined;
+  const modifiers = data.assessment?.modifiers ?? [];
+  const done = data.completedSteps;
+
+  if (!path) {
+    return (
+      <Screen title="Your plan" subtitle="A few questions first.">
+        <Text style={styles.empty}>
+          Answering a few questions lets this build a plan around your situation rather than a
+          generic list. You can skip anything, and stop whenever you like.
+        </Text>
+        <Pressable
+          onPress={() => navigation.navigate('Assessment')}
+          style={({ pressed }) => [styles.primary, pressed && styles.pressed]}
+        >
+          <Text style={styles.primaryText}>Start</Text>
+        </Pressable>
+      </Screen>
+    );
+  }
+
+  const steps = path.steps.filter((s) => !s.requires || modifiers.includes(s.requires));
+
+  function follow(step: PathStep) {
+    const action = step.action;
+    if (!action) return;
+
+    switch (action.kind) {
+      case 'screen':
+        navigation.navigate(action.screen);
+        break;
+      case 'directory':
+        navigation.navigate('Directory', { filter: action.filter });
+        break;
+      case 'call':
+      case 'external':
+        confirmExit(action);
+        break;
+    }
+  }
+
+  function toggle(step: PathStep) {
+    update((d) => ({
+      completedSteps: d.completedSteps.includes(step.id)
+        ? d.completedSteps.filter((id) => id !== step.id)
+        : [...d.completedSteps, step.id],
+    }));
+  }
 
   return (
     <Screen title={path.title} subtitle={path.premise}>
-      <Text style={styles.todo}>
-        Lane B1 builds this. {path.steps.length} steps are written for this path in
-        src/data/paths.ts — read the comment at the top of this file for how to render
-        and link them.
-      </Text>
+      {steps.map((step, i) => {
+        const checked = done.includes(step.id);
+        return (
+          <View key={step.id} style={styles.step}>
+            <Pressable onPress={() => toggle(step)} hitSlop={8} style={styles.checkWrap}>
+              <View style={[styles.check, checked && styles.checkOn]}>
+                {checked ? <Text style={styles.checkMark}>✓</Text> : null}
+              </View>
+            </Pressable>
+
+            <Pressable style={styles.stepBody} onPress={() => follow(step)}>
+              <Text style={styles.stepIndex}>STEP {i + 1}</Text>
+              <Text style={[styles.stepTitle, checked && styles.stepTitleDone]}>
+                {step.title}
+              </Text>
+              <Text style={styles.stepText}>{step.body}</Text>
+              {step.action ? <Text style={styles.stepGo}>Open ›</Text> : null}
+            </Pressable>
+          </View>
+        );
+      })}
+
+      <Pressable
+        onPress={() => navigation.navigate('Assessment')}
+        style={styles.redo}
+      >
+        <Text style={styles.redoText}>Things have changed — answer again</Text>
+      </Pressable>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  todo: {
-    ...type.body,
-    color: app.subtle,
-    backgroundColor: app.surface,
-    padding: space.md,
-    borderRadius: 10,
+  empty: { ...type.body, color: app.subtle },
+  primary: {
+    backgroundColor: app.accent,
+    borderRadius: radius.md,
+    paddingVertical: space.md,
+    alignItems: 'center',
   },
+  primaryText: { ...type.body, color: app.bg, fontWeight: '700' },
+  pressed: { opacity: 0.7 },
+
+  step: {
+    flexDirection: 'row',
+    gap: space.md,
+    backgroundColor: app.surface,
+    borderRadius: radius.md,
+    padding: space.md,
+  },
+  checkWrap: { paddingTop: 2 },
+  check: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: app.line,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkOn: { backgroundColor: app.accent, borderColor: app.accent },
+  checkMark: { color: app.bg, fontSize: 14, fontWeight: '700' },
+  stepBody: { flex: 1, gap: 2 },
+  stepIndex: { ...type.label, color: app.subtle },
+  stepTitle: { ...type.body, color: app.text, fontWeight: '600' },
+  stepTitleDone: { color: app.subtle, textDecorationLine: 'line-through' },
+  stepText: { ...type.small, color: app.subtle, marginTop: 2 },
+  stepGo: { ...type.small, color: app.accent, marginTop: space.sm, fontWeight: '600' },
+
+  redo: { paddingVertical: space.md, alignItems: 'center' },
+  redoText: { ...type.small, color: app.subtle },
 });
